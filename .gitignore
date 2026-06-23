@@ -1,0 +1,9 @@
+.env.local
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.claude/worktrees/
+.env
+.vscode/
