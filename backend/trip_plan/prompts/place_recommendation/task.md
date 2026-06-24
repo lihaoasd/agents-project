@@ -9,7 +9,7 @@
 - 体验方式
 
 输出字段必须包含：
-- id：前端静态数据中的目的地 id，例如 xian、hangzhou、beijing、nanjing、chengdu、dunhuang
+- id：目的地唯一标识，使用城市拼音（例如 xian、hangzhou、beijing），不要带数字或后缀
 - province：省份、直辖市或自治区
 - city：地市名称
 - matchScore：0-100 的整数匹配度

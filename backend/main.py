@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import logging
+import time
+
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import AppConfig
+from logging_config import get_logger, setup_logging
 from trip_plan.api import router as trip_plan_router
+
+setup_logging()
+logger = get_logger("trip_plan.api")
 
 app_config = AppConfig()
 

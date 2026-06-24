@@ -5,21 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from agent import AgentError
+from logging_config import get_logger
 
 from trip_plan.agent.models import (
     PlaceRecommendation,
     PlaceRecommendationResult,
 )
 from trip_plan.agent.place_recommendation_agent import PlaceRecommendationAgent
-
-KNOWN_DESTINATION_IDS = {
-    "xian",
-    "hangzhou",
-    "beijing",
-    "nanjing",
-    "chengdu",
-    "dunhuang",
-}
 
 FALLBACK_DESTINATIONS = [
     PlaceRecommendation(
@@ -74,6 +66,9 @@ class PlaceRecommendationServiceResult:
     fallback: bool = False
 
 
+logger = get_logger("trip_plan.service")
+
+
 class TripPlanService:
     """行程规划统一服务入口。"""
 
@@ -85,13 +80,23 @@ class TripPlanService:
 
         requirement = requirement.strip()
         if not requirement:
+            logger.warning("地方推荐请求缺少 requirement")
             raise ValueError("requirement 不能为空")
+
+        logger.info("开始生成地方推荐 requirement_length=%s", len(requirement))
 
         try:
             agent_result = self.agent.run(requirement)
             destinations = self._normalize_destinations(agent_result.result.destinations)
             if not destinations:
+                logger.warning("地方推荐 Agent 返回空结果，启用静态兜底")
                 return self._fallback_result(agent_result.result.notice)
+            logger.info(
+                "地方推荐完成 count=%s provider=%s model=%s",
+                len(destinations),
+                agent_result.provider,
+                agent_result.model,
+            )
             return PlaceRecommendationServiceResult(
                 result=PlaceRecommendationResult(
                     destinations=destinations,
@@ -100,7 +105,8 @@ class TripPlanService:
                 provider=agent_result.provider,
                 model=agent_result.model,
             )
-        except AgentError:
+        except AgentError as exc:
+            logger.warning("地方推荐 Agent 调用失败，启用静态兜底: %s", exc)
             return self._fallback_result("智能推荐暂时不可用，已为你展示通用文化旅行推荐。")
 
     def _normalize_destinations(
@@ -110,14 +116,15 @@ class TripPlanService:
         normalized: list[PlaceRecommendation] = []
         seen_ids: set[str] = set()
         for destination in destinations[:3]:
-            if destination.id not in KNOWN_DESTINATION_IDS:
+            dest_id = destination.id.strip().lower()
+            if not dest_id:
                 continue
-            if destination.id in seen_ids:
+            if dest_id in seen_ids:
                 continue
-            seen_ids.add(destination.id)
+            seen_ids.add(dest_id)
             normalized.append(
                 PlaceRecommendation(
-                    id=destination.id,
+                    id=dest_id,
                     province=destination.province.strip(),
                     city=destination.city.strip(),
                     matchScore=max(0, min(100, destination.matchScore)),
@@ -129,6 +136,7 @@ class TripPlanService:
         return normalized
 
     def _fallback_result(self, notice: str) -> PlaceRecommendationServiceResult:
+        logger.info("地方推荐静态兜底 count=%s", len(FALLBACK_DESTINATIONS))
         return PlaceRecommendationServiceResult(
             result=PlaceRecommendationResult(
                 destinations=FALLBACK_DESTINATIONS,
