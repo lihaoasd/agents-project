@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import '../styles/culturalTravel.css'
+import { recommendPlaces } from '../api/tripPlanApi'
 import {
-  getRecommendedDestinations,
   getResourcesByDestination,
   getRouteByDestination,
   getSpotsByDestination,
@@ -19,6 +19,7 @@ const generatedRoute = ref(null)
 const generatedResources = ref(null)
 const resourceTab = ref('books')
 const notice = ref('')
+const loadingStep = ref(null)
 
 const currentStep = computed(() => {
   if (generatedResources.value) return 'resources'
@@ -44,9 +45,23 @@ const selectedCultureText = computed(() => {
   ].join('')
 })
 
-function recommendCities() {
+async function recommendCities() {
   resetAfterCity()
-  recommendedCities.value = getRecommendedDestinations(requirement.value.trim())
+  const text = requirement.value.trim()
+  if (!text) {
+    notice.value = '请输入文化旅行需求'
+    return
+  }
+  loadingStep.value = 'city'
+  try {
+    const result = await recommendPlaces(text)
+    recommendedCities.value = result.data.destinations
+    notice.value = result.data.notice || ''
+  } catch (err) {
+    notice.value = err.message || '网络错误，无法连接后端服务'
+  } finally {
+    loadingStep.value = null
+  }
 }
 
 function resetAfterCity() {
@@ -174,15 +189,25 @@ function placeholderClass(stepKey) {
         placeholder="例如：想带孩子了解唐代文化，3天，预算中等，希望有博物馆和美食体验"
       />
       <div class="actions">
-        <button class="primary" type="button" @click="recommendCities">
-          推荐地方
+        <button
+          class="primary"
+          type="button"
+          :disabled="loadingStep === 'city'"
+          @click="recommendCities"
+        >
+          <span v-if="loadingStep === 'city'" class="spinner"></span>
+          {{ loadingStep === 'city' ? '正在分析需求，推荐地方…' : '推荐地方' }}
         </button>
         <button class="secondary" type="button" @click="requirement = '想带孩子了解唐代文化，3天，预算中等'">
           填入示例
         </button>
       </div>
-      <p v-if="!recommendedCities.length" class="hint">
-        当前使用静态数据，不调用后端 API。
+      <p v-if="!recommendedCities.length && loadingStep !== 'city'" class="hint">
+        输入文化旅行需求，点击"推荐地方"将通过 AI 生成地方推荐。
+      </p>
+      <p v-if="loadingStep === 'city'" class="loading">
+        <span class="spinner"></span>
+        正在调用大模型分析用户需求，推荐合适地市，请稍候...
       </p>
     </section>
 
@@ -207,6 +232,8 @@ function placeholderClass(stepKey) {
         </li>
       </ol>
 
+      <p class="section-desc">为你推荐了 <strong>{{ recommendedCities.length }}</strong> 个文化旅行目的地，可左右滑动浏览</p>
+
       <div class="destination-grid">
         <button
           v-for="destination in recommendedCities"
@@ -226,9 +253,12 @@ function placeholderClass(stepKey) {
           <div class="tags">
             <span v-for="tag in destination.tags" :key="tag">{{ tag }}</span>
           </div>
-          <ul>
-            <li v-for="reason in destination.reasons" :key="reason">{{ reason }}</li>
-          </ul>
+          <div class="destination-reasons">
+            <div v-for="reason in destination.reasons" :key="reason" class="destination-reason">
+              <span class="reason-dot"></span>
+              <span>{{ reason }}</span>
+            </div>
+          </div>
         </button>
       </div>
     </section>

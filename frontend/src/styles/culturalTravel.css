@@ -118,6 +118,52 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
+.primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.loading .spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 3px;
+  border-color: rgba(22, 101, 52, 0.2);
+  border-top-color: var(--primary);
+  margin-right: 0;
+}
+
 .hint,
 .notice {
   margin: 14px 0 0;
@@ -208,13 +254,33 @@ textarea:focus {
 }
 
 .destination-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
   gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.destination-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.destination-grid::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: var(--primary-soft);
+}
+
+.destination-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--primary);
 }
 
 .destination-card {
-  min-height: 220px;
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
   text-align: left;
   border: 1px solid var(--line);
   border-radius: 22px;
@@ -280,12 +346,47 @@ textarea:focus {
   font-weight: 800;
 }
 
-.destination-card ul {
-  margin: 0;
-  padding-left: 18px;
+.destination-reasons {
+  flex: 1 1 auto;
+  margin: 0 0 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.destination-reasons::-webkit-scrollbar {
+  width: 5px;
+}
+
+.destination-reasons::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: var(--panel-soft);
+}
+
+.destination-reasons::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.destination-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel-soft);
   color: var(--muted);
-  line-height: 1.65;
-  font-size: 14px;
+  line-height: 1.55;
+  font-size: 13px;
+}
+
+.destination-reason .reason-dot {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--primary);
 }
 
 .section-desc {
@@ -724,7 +825,10 @@ textarea:focus {
 }
 
 @media (max-width: 960px) {
-  .destination-grid,
+  .destination-card {
+    flex: 0 0 260px;
+  }
+
   .future-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

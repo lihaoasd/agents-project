@@ -115,7 +115,7 @@ class TripPlanService:
     ) -> list[PlaceRecommendation]:
         normalized: list[PlaceRecommendation] = []
         seen_ids: set[str] = set()
-        for destination in destinations[:3]:
+        for destination in destinations[:10]:
             dest_id = destination.id.strip().lower()
             if not dest_id:
                 continue
