@@ -57,3 +57,33 @@ class TravelPlanResult(BaseModel):
     plan: TravelPlan
     model: str
     provider: str
+
+
+class PlaceRecommendation(BaseModel):
+    """前端地方推荐卡片模型。"""
+
+    id: str = Field(description="前端静态数据中的目的地 id")
+    province: str = Field(description="省份、直辖市或自治区")
+    city: str = Field(description="地市名称")
+    matchScore: int = Field(description="匹配度，范围 0-100", ge=0, le=100)
+    tags: list[str] = Field(default_factory=list, description="适合前端展示的标签")
+    reasons: list[str] = Field(default_factory=list, description="推荐理由列表")
+    intro: str = Field(description="目的地简介")
+
+
+class PlaceRecommendationResult(BaseModel):
+    """地方推荐结果。"""
+
+    destinations: list[PlaceRecommendation] = Field(
+        default_factory=list,
+        description="推荐地方列表，默认 3 个左右",
+    )
+    notice: str = Field(default="已根据您的需求生成地方推荐。")
+
+
+class PlaceRecommendationAgentResult(BaseModel):
+    """地方推荐 Agent 运行结果包装。"""
+
+    result: PlaceRecommendationResult
+    model: str
+    provider: str
