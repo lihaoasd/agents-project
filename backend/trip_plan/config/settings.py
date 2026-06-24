@@ -1,66 +1,46 @@
-from dataclasses import dataclass
-from functools import lru_cache
+"""行程规划业务配置。"""
+
+from __future__ import annotations
+
 from pathlib import Path
-import os
 
-from dotenv import load_dotenv
-
-
-BACKEND_DIR = Path(__file__).resolve().parents[2]
-TRIP_PLAN_DIR = Path(__file__).resolve().parents[1]
-
-# 只读取项目内 backend/.env；不要求用户设置系统环境变量。
-load_dotenv(BACKEND_DIR / ".env")
+from pydantic import Field, PrivateAttr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-@dataclass(frozen=True)
-class Settings:
-    app_name: str = "文化旅行 Agent"
-    version: str = "0.1.0"
-    default_language: str = "zh-CN"
-    cors_origins: tuple[str, ...] = (
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+class TripPlanConfig(BaseSettings):
+    """行程规划模块的专有业务配置。"""
+
+    default_days: int = Field(default=3, ge=1, le=14, validation_alias="TRIP_PLAN_DEFAULT_DAYS")
+    default_budget: str = Field(default="中等", validation_alias="TRIP_PLAN_DEFAULT_BUDGET")
+    max_city_recommendations: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        validation_alias="TRIP_PLAN_MAX_CITY_RECOMMENDATIONS",
     )
-    amap_key: str = ""
-    enable_amap: bool = False
-    llm_api_key: str = ""
-    enable_llm: bool = False
-    mcp_config_path: Path | None = None
-
-
-def _parse_bool(value: str | None, default: bool = False) -> bool:
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    mcp_config_path_raw = os.getenv("MCP_CONFIG_PATH", "").strip()
-    mcp_config_path = Path(mcp_config_path_raw) if mcp_config_path_raw else None
-
-    return Settings(
-        app_name=os.getenv("APP_NAME", "文化旅行 Agent"),
-        version=os.getenv("APP_VERSION", "0.1.0"),
-        default_language=os.getenv("DEFAULT_LANGUAGE", "zh-CN"),
-        cors_origins=tuple(
-            origin.strip()
-            for origin in os.getenv(
-                "CORS_ORIGINS",
-                "http://localhost:5173,http://127.0.0.1:5173",
-            ).split(",")
-            if origin.strip()
-        ),
-        amap_key=os.getenv("AMAP_KEY", "").strip(),
-        enable_amap=_parse_bool(
-            os.getenv("ENABLE_AMAP"),
-            default=bool(os.getenv("AMAP_KEY", "").strip()),
-        ),
-        llm_api_key=os.getenv("ANTHROPIC_API_KEY", "").strip(),
-        enable_llm=_parse_bool(
-            os.getenv("ENABLE_LLM"),
-            default=bool(os.getenv("ANTHROPIC_API_KEY", "").strip()),
-        ),
-        mcp_config_path=mcp_config_path,
+    max_spot_recommendations: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        validation_alias="TRIP_PLAN_MAX_SPOT_RECOMMENDATIONS",
     )
+    disclaimer: str = Field(
+        default="文化、开放时间和费用可能变化，出行前需核实。",
+        validation_alias="TRIP_PLAN_DISCLAIMER",
+    )
+
+    _env_file: Path = PrivateAttr()
+
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    def __init__(self, env_file: Path | None = None) -> None:
+        backend_dir = Path(__file__).resolve().parents[2]
+        self._env_file = env_file or backend_dir / ".env"
+        super().__init__(_env_file=self._env_file, _env_file_encoding="utf-8", _env={})
+
+
+__all__ = ["TripPlanConfig"]

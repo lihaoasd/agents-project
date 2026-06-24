@@ -1,66 +1,87 @@
-from dataclasses import dataclass
-from functools import lru_cache
+"""通用配置读取。
+
+通用配置独立放在 backend/config，供不同业务模块复用。
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
-import os
+from typing import Literal
 
-from dotenv import load_dotenv
+from pydantic import Field, PrivateAttr, SecretStr, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-BACKEND_DIR = Path(__file__).resolve().parents[2]
-TRIP_PLAN_DIR = Path(__file__).resolve().parents[1]
-
-# 只读取项目内 backend/.env；不要求用户设置系统环境变量。
-load_dotenv(BACKEND_DIR / ".env")
+LLMProvider = Literal["anthropic", "openai"]
 
 
-@dataclass(frozen=True)
-class Settings:
-    app_name: str = "文化旅行 Agent"
-    version: str = "0.1.0"
-    default_language: str = "zh-CN"
-    cors_origins: tuple[str, ...] = (
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+class AppConfig(BaseSettings):
+    """应用级配置。"""
+
+    project_name: str = "文化旅行 Agent"
+    debug: bool = Field(default=False, validation_alias="APP_DEBUG")
+
+    _env_file: Path = PrivateAttr()
+
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
-    amap_key: str = ""
-    enable_amap: bool = False
-    llm_api_key: str = ""
-    enable_llm: bool = False
-    mcp_config_path: Path | None = None
+
+    def __init__(self, env_file: Path | None = None) -> None:
+        backend_dir = Path(__file__).resolve().parents[1]
+        self._env_file = env_file or backend_dir / ".env"
+        super().__init__(_env_file=self._env_file, _env_file_encoding="utf-8", _env={})
 
 
-def _parse_bool(value: str | None, default: bool = False) -> bool:
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+class LLMConfig(BaseSettings):
+    """大模型调用配置。"""
 
+    provider: LLMProvider = Field(default="anthropic", validation_alias="LLM_PROVIDER")
+    model: str = Field(default="", validation_alias="LLM_MODEL")
+    api_key: SecretStr = Field(default_factory=lambda: SecretStr(""))
+    base_url: str = Field(default="", validation_alias="LLM_BASE_URL")
+    temperature: float = Field(default=0.2, ge=0, le=2, validation_alias="LLM_TEMPERATURE")
+    max_tokens: int = Field(default=2048, gt=0, validation_alias="LLM_MAX_TOKENS")
+    timeout_seconds: int = Field(default=30, gt=0, validation_alias="LLM_TIMEOUT_SECONDS")
 
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    mcp_config_path_raw = os.getenv("MCP_CONFIG_PATH", "").strip()
-    mcp_config_path = Path(mcp_config_path_raw) if mcp_config_path_raw else None
+    anthropic_api_key: SecretStr | None = None
+    openai_api_key: SecretStr | None = None
 
-    return Settings(
-        app_name=os.getenv("APP_NAME", "文化旅行 Agent"),
-        version=os.getenv("APP_VERSION", "0.1.0"),
-        default_language=os.getenv("DEFAULT_LANGUAGE", "zh-CN"),
-        cors_origins=tuple(
-            origin.strip()
-            for origin in os.getenv(
-                "CORS_ORIGINS",
-                "http://localhost:5173,http://127.0.0.1:5173",
-            ).split(",")
-            if origin.strip()
-        ),
-        amap_key=os.getenv("AMAP_KEY", "").strip(),
-        enable_amap=_parse_bool(
-            os.getenv("ENABLE_AMAP"),
-            default=bool(os.getenv("AMAP_KEY", "").strip()),
-        ),
-        llm_api_key=os.getenv("ANTHROPIC_API_KEY", "").strip(),
-        enable_llm=_parse_bool(
-            os.getenv("ENABLE_LLM"),
-            default=bool(os.getenv("ANTHROPIC_API_KEY", "").strip()),
-        ),
-        mcp_config_path=mcp_config_path,
+    _env_file: Path = PrivateAttr()
+
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
+
+    def __init__(self, env_file: Path | None = None) -> None:
+        backend_dir = Path(__file__).resolve().parents[1]
+        self._env_file = env_file or backend_dir / ".env"
+        super().__init__(_env_file=self._env_file, _env_file_encoding="utf-8", _env={})
+
+    @model_validator(mode="after")
+    def normalize_llm_config(self) -> "LLMConfig":
+        provider = self.provider
+        api_key_name = "ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY"
+        api_key = self.anthropic_api_key if provider == "anthropic" else self.openai_api_key
+        if api_key is None:
+            raise ValueError(f"缺少 {api_key_name}，请在 backend/.env 中配置")
+
+        default_model = "claude-sonnet-4-6" if provider == "anthropic" else "gpt-4.1-mini"
+        default_base_url = (
+            "https://api.anthropic.com/v1"
+            if provider == "anthropic"
+            else "https://api.openai.com/v1"
+        )
+
+        self.model = self.model or default_model
+        self.api_key = api_key
+        self.base_url = self.base_url or default_base_url
+        return self
+
+
+__all__ = [
+    "AppConfig",
+    "LLMConfig",
+    "LLMProvider",
+]

@@ -1,11 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir -p \".claude/skills\")",
-      "Bash(PATH=/d/lihao/Programs/node-v20.3.1-win-x64:__TRACKED_VAR__ D:/lihao/Programs/node-v20.3.1-win-x64/npm.cmd run build)"
-    ],
-    "additionalDirectories": [
-      "d:\\lihao\\cultural_travel\\.claude"
+      "Bash(git -C /d/lihao/cultural_travel rev-parse --show-toplevel)",
+      "Bash(git -C /d/lihao/cultural_travel status --short)",
+      "Bash(git -C /d/lihao/cultural_travel branch --show-current)"
     ]
   }
 }
