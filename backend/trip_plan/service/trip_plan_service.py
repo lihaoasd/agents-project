@@ -15,6 +15,7 @@ from trip_plan.agent.models import (
 )
 from trip_plan.agent.place_recommendation_agent import PlaceRecommendationAgent
 from trip_plan.agent.scenic_spot_agent import ScenicSpotAgent
+from trip_plan.service.unsplash_image_service import UnsplashImageService
 
 FALLBACK_DESTINATIONS = [
     PlaceRecommendation(
@@ -104,9 +105,15 @@ logger = get_logger("trip_plan.service")
 class TripPlanService:
     """行程规划统一服务入口。"""
 
-    def __init__(self, place_agent: PlaceRecommendationAgent | None = None, spot_agent: ScenicSpotAgent | None = None) -> None:
+    def __init__(
+        self,
+        place_agent: PlaceRecommendationAgent | None = None,
+        spot_agent: ScenicSpotAgent | None = None,
+        image_service: UnsplashImageService | None = None,
+    ) -> None:
         self._place_agent = place_agent or PlaceRecommendationAgent()
         self._spot_agent = spot_agent or ScenicSpotAgent()
+        self._image_service = image_service or UnsplashImageService()
 
     def recommend_places(self, requirement: str) -> PlaceRecommendationServiceResult:
         """根据用户一句话生成地方推荐。"""
@@ -212,6 +219,7 @@ class TripPlanService:
         try:
             agent_result = self._spot_agent.run(user_content)
             spots = self._normalize_spots(agent_result.result.spots)
+            spots = self._enrich_spot_images(spots, destination_city, destination_province)
             if not spots:
                 logger.warning("景点推荐 Agent 返回空结果，启用静态兜底")
                 return self._fallback_spots_result(
@@ -261,16 +269,38 @@ class TripPlanService:
                     cultureTags=spot.cultureTags or ["文化旅行"],
                     imageAlt=spot.imageAlt.strip() or spot.name.strip(),
                     imageUrl=spot.imageUrl.strip(),
+                    imageSearchQuery=spot.imageSearchQuery.strip(),
                 )
             )
         return normalized
+
+    def _enrich_spot_images(
+        self,
+        spots: list[ScenicSpot],
+        destination_city: str,
+        destination_province: str,
+    ) -> list[ScenicSpot]:
+        for spot in spots:
+            if spot.imageUrl:
+                continue
+            image = self._image_service.search_for_spot(
+                spot.name,
+                destination_city,
+                destination_province,
+                spot.type,
+                preferred_query=spot.imageSearchQuery,
+            )
+            if image:
+                spot.imageUrl = image.url
+                spot.imageAlt = image.alt or spot.imageAlt or spot.name
+        return spots
 
     def _fallback_spots_result(
         self,
         destination_id: str,
         notice: str,
     ) -> ScenicSpotsServiceResult:
-        spots = self._load_static_spots(destination_id)
+        spots = self._enrich_spot_images(self._load_static_spots(destination_id), "", "")
         logger.info("景点推荐静态兜底 count=%s", len(spots))
         return ScenicSpotsServiceResult(
             result=ScenicSpotsResult(

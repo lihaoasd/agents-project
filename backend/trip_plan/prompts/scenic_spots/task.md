@@ -18,6 +18,7 @@
 - cultureTags：文化标签数组，3-5 个
 - imageAlt：图片替代文字，用景点名称
 - imageUrl：空字符串或留空
+- imageSearchQuery：用于 Unsplash 英文图片检索的查询词，必须用英文，尽量包含景点英文名、城市英文名和国家/地区，例如 "Mogao Caves Dunhuang Gansu China"、"West Lake Hangzhou China"；不确定英文名时可写空字符串
 
 注意：
 - 不要编造精确门票价格和确切开放时间

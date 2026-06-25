@@ -27,6 +27,7 @@ class ScenicSpot(BaseModel):
     cultureTags: list[str] = Field(default_factory=list, description="文化标签")
     imageAlt: str = Field(default="", description="图片替代文字")
     imageUrl: str = Field(default="", description="图片链接")
+    imageSearchQuery: str = Field(default="", description="用于 Unsplash 英文检索的查询词")
 
 
 class RouteSegment(BaseModel):
