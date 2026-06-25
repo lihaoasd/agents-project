@@ -113,3 +113,34 @@ class ScenicSpotsAgentResult(BaseModel):
     result: ScenicSpotsResult
     model: str
     provider: str
+
+
+class CulturalInterpretation(BaseModel):
+    """景点综合文化解读。"""
+
+    spotId: str = Field(description="景点标识")
+    spotName: str = Field(description="景点名称")
+    overview: str = Field(description="景点核心文化定位")
+    historyCulture: str = Field(description="历史文化背景和文化价值")
+    customs: str = Field(description="与当地风俗、生活方式或市井体验的关系")
+    geography: str = Field(description="与地理环境、城市格局或自然条件的关系")
+    foodSuggestion: str = Field(default="", description="美食提示，可为空")
+    tags: list[str] = Field(default_factory=list, description="文化标签")
+
+
+class CulturalInterpretationsResult(BaseModel):
+    """综合文化解读结果。"""
+
+    cultures: list[CulturalInterpretation] = Field(
+        default_factory=list,
+        description="景点综合文化解读列表",
+    )
+    notice: str = Field(default="已生成景点综合文化解读。")
+
+
+class CulturalInterpretationsAgentResult(BaseModel):
+    """综合文化解读 Agent 运行结果包装。"""
+
+    result: CulturalInterpretationsResult
+    model: str
+    provider: str

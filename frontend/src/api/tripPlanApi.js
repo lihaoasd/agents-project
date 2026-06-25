@@ -38,6 +38,36 @@ export async function recommendScenicSpots({ requirement, destinationId, destina
   return body
 }
 
+/**
+ * 根据用户需求和已选景点生成综合文化解读。
+ * @param {{ requirement: string, destinationId: string, destinationCity: string, destinationProvince: string, spots: Array }} params
+ * @returns {Promise<{ data: { cultures: Array, notice: string }, meta: object }>}
+ */
+export async function recommendCulturalInterpretations({
+  requirement,
+  destinationId,
+  destinationCity,
+  destinationProvince,
+  spots,
+}) {
+  const response = await fetch(`${BASE_URL}/api/trip-plan/cultural-interpretations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requirement,
+      destinationId,
+      destinationCity,
+      destinationProvince,
+      spots,
+    }),
+  })
+  const body = await response.json()
+  if (!response.ok) {
+    throw new ApiError(body?.detail || body?.error?.message || '请求失败', response.status)
+  }
+  return body
+}
+
 class ApiError extends Error {
   constructor(message, status) {
     super(message)

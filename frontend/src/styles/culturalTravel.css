@@ -566,32 +566,54 @@ textarea:focus {
 }
 
 .culture-detail h3 {
-  margin: 0 0 18px;
+  margin: 0 0 12px;
   color: var(--text);
   font-size: 26px;
 }
 
-.culture-text {
-  max-height: 420px;
-  overflow-y: auto;
-  border-radius: 18px;
-  padding: 18px;
+.culture-overview {
+  margin: 0 0 18px;
   color: var(--muted);
-  background: var(--panel-soft);
-  line-height: 1.9;
-  white-space: pre-line;
+  line-height: 1.8;
 }
 
-.culture-text::-webkit-scrollbar {
+.culture-sections {
+  display: grid;
+  gap: 14px;
+  max-height: 430px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.culture-section {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: var(--panel-soft);
+}
+
+.culture-section h4 {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.culture-section p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.culture-sections::-webkit-scrollbar {
   width: 10px;
 }
 
-.culture-text::-webkit-scrollbar-track {
+.culture-sections::-webkit-scrollbar-track {
   border-radius: 999px;
   background: var(--primary-soft);
 }
 
-.culture-text::-webkit-scrollbar-thumb {
+.culture-sections::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: var(--primary);
 }

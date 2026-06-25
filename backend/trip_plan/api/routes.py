@@ -8,6 +8,8 @@ from fastapi import APIRouter, HTTPException
 
 from trip_plan.api.schemas import (
     AgentMeta,
+    CulturalInterpretationsRequest,
+    CulturalInterpretationsResponse,
     PlaceRecommendationRequest,
     PlaceRecommendationResponse,
     ScenicSpotsRequest,
@@ -65,6 +67,38 @@ async def recommend_scenic_spots(request: ScenicSpotsRequest) -> ScenicSpotsResp
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return ScenicSpotsResponse(
+        data=result.result,
+        meta=AgentMeta(
+            provider=result.provider,
+            model=result.model,
+            fallback=result.fallback,
+        ),
+    )
+
+
+@router.post(
+    "/cultural-interpretations",
+    response_model=CulturalInterpretationsResponse,
+    summary="根据用户需求和已选景点生成综合文化解读",
+)
+async def recommend_cultural_interpretations(
+    request: CulturalInterpretationsRequest,
+) -> CulturalInterpretationsResponse:
+    """根据用户需求、目的地和景点生成历史、风俗、地理综合文化解读。"""
+
+    try:
+        result = await asyncio.to_thread(
+            trip_plan_service.recommend_cultural_interpretations,
+            request.requirement,
+            request.destinationId,
+            request.destinationCity,
+            request.destinationProvince,
+            request.spots,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return CulturalInterpretationsResponse(
         data=result.result,
         meta=AgentMeta(
             provider=result.provider,

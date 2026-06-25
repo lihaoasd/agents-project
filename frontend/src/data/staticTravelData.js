@@ -1,7 +1,7 @@
 export const progressSteps = [
   { key: 'city', label: '地方推荐' },
   { key: 'spots', label: '旅游景点生成' },
-  { key: 'culture', label: '历史文化介绍' },
+  { key: 'culture', label: '综合文化解读' },
   { key: 'route', label: '地图路线规划' },
   { key: 'resources', label: '书籍/短视频/文章' },
 ]
@@ -498,6 +498,24 @@ export const routeData = {
   },
 }
 
+export const destinationCustoms = {
+  xian: '关中面食、城墙生活、回民街饮食和博物馆研学，都是理解西安日常文化的重要入口。',
+  hangzhou: '茶文化、湖山游赏、运河街区和江南市井生活，是杭州文化体验中很有代表性的部分。',
+  beijing: '胡同生活、老字号小吃、京剧和节令民俗，能帮助游客从日常层面理解北京。',
+  nanjing: '秦淮风物、江南饮食、街巷生活和博物馆参观，是理解南京文化层次的重要方式。',
+  chengdu: '茶馆、川菜、川剧和街巷生活体现了成都重视日常体验和城市慢生活的文化特点。',
+  dunhuang: '敦煌文化体验常与石窟参观、丝路故事、地方小吃和沙漠旅行记忆结合。',
+}
+
+export const destinationGeography = {
+  xian: '西安位于关中平原，南依秦岭，北临渭河，平原与山河屏障共同影响了古都选址和城市发展。',
+  hangzhou: '杭州处在江南水网与钱塘江流域交汇处，西湖和运河共同塑造了城市景观与生活方式。',
+  beijing: '北京位于华北平原北端，背靠燕山，面向平原，城市轴线、水系和交通区位影响了都城格局。',
+  nanjing: '南京依江而建，紫金山、玄武湖和长江共同构成山水城林格局，也影响了城市防御与空间发展。',
+  chengdu: '成都位于四川盆地西部，平原肥沃、水系发达，为蜀地农业、城市发展和休闲生活提供了基础。',
+  dunhuang: '敦煌位于河西走廊西端，周边沙漠、绿洲和戈壁共同塑造了丝路交通与边塞文化。',
+}
+
 export function getRouteByDestination(destinationId) {
   return routeData[destinationId] || null
 }
@@ -631,4 +649,29 @@ export function getSpotsByDestination(destinationId) {
     culture: cultureData[spot.id] || null,
     imageUrl: spot.imageUrl || `https://picsum.photos/seed/cultural-${destinationId}-${spot.id}/640/420`,
   }))
+}
+
+export function getCultureByDestination(destinationId, spot) {
+  const baseCulture = cultureData[spot.id] || {}
+  const customs = destinationCustoms[destinationId] || '当地风俗习惯和生活方式往往体现在饮食、街巷、节庆和日常体验中。'
+  const geography = destinationGeography[destinationId] || '当地地理环境、水系、地形和交通区位共同影响了城市发展和文化形成。'
+  const foodSuggestions = {
+    xian: '可结合肉夹馍、羊肉泡馍或回民街小吃理解关中饮食文化。',
+    hangzhou: '可结合龙井茶、片儿川、南宋御街小吃体验江南饮食与城市生活。',
+    beijing: '可结合烤鸭、卤煮、豆汁或胡同小吃体验北京饮食文化。',
+    nanjing: '可结合盐水鸭、鸭血粉丝汤和夫子庙小吃体验南京地方风味。',
+    chengdu: '可结合担担面、钟水饺、茶馆和川菜体验成都生活文化。',
+    dunhuang: '可结合驴肉黄面、胡羊焖饼或夜市小吃体验西北边塞风味。',
+  }
+
+  return {
+    spotId: spot.id,
+    spotName: spot.name,
+    overview: baseCulture.overview || '该景点适合从历史文化、风俗习惯和地理环境三个角度理解。',
+    historyCulture: [baseCulture.history, baseCulture.value].filter(Boolean).join('') || '该景点体现了当地历史文化的延续，可从建筑、遗存、文物或城市记忆中理解其价值。',
+    customs: customs,
+    geography: geography,
+    foodSuggestion: foodSuggestions[destinationId] || '',
+    tags: spot.cultureTags || ['文化旅行'],
+  }
 }

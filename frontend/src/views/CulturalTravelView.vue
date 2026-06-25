@@ -1,8 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue'
 import '../styles/culturalTravel.css'
-import { recommendPlaces, recommendScenicSpots } from '../api/tripPlanApi'
+import { recommendCulturalInterpretations, recommendPlaces, recommendScenicSpots } from '../api/tripPlanApi'
 import {
+  getCultureByDestination,
   getResourcesByDestination,
   getRouteByDestination,
   getSpotsByDestination,
@@ -35,14 +36,14 @@ const selectedCulture = computed(() => {
   return generatedCultures.value.find((culture) => culture.spotId === selectedSpot.value.id) || null
 })
 
-const selectedCultureText = computed(() => {
-  if (!selectedCulture.value) return ''
+const cultureSections = computed(() => {
+  if (!selectedCulture.value) return []
   return [
-    selectedCulture.value.overview,
-    selectedCulture.value.history,
-    selectedCulture.value.value,
-    selectedCulture.value.tip,
-  ].join('')
+    { title: '历史文化', text: selectedCulture.value.historyCulture || selectedCulture.value.history || '' },
+    { title: '风俗习惯', text: selectedCulture.value.customs || '' },
+    { title: '地理特点', text: selectedCulture.value.geography || '' },
+    { title: '美食提示', text: selectedCulture.value.foodSuggestion || '' },
+  ].filter((section) => section.text)
 })
 
 async function recommendCities() {
@@ -66,6 +67,7 @@ async function recommendCities() {
 
 function resetAfterCity() {
   notice.value = ''
+  loadingStep.value = null
   selectedDestination.value = null
   selectedSpot.value = null
   generatedSpots.value = []
@@ -76,6 +78,7 @@ function resetAfterCity() {
 
 function selectDestination(destination) {
   selectedDestination.value = destination
+  loadingStep.value = null
   selectedSpot.value = null
   generatedSpots.value = []
   generatedCultures.value = []
@@ -118,19 +121,29 @@ function selectSpot(spot) {
   selectedSpot.value = spot
 }
 
-function generateCultureIntros() {
-  if (!generatedSpots.value.length) return
-  generatedCultures.value = generatedSpots.value
-    .filter((spot) => spot.culture)
-    .map((spot) => ({
-      spotId: spot.id,
-      name: spot.name,
-      ...spot.culture,
-    }))
-  selectedSpot.value = generatedSpots.value[0] || null
+async function generateCultureIntros() {
+  if (!generatedSpots.value.length || !selectedDestination.value) return
+  loadingStep.value = 'culture'
+  generatedCultures.value = []
   generatedRoute.value = null
   generatedResources.value = null
-  notice.value = `已生成 ${generatedCultures.value.length} 个景点的历史文化介绍。`
+  try {
+    const result = await recommendCulturalInterpretations({
+      requirement: requirement.value.trim(),
+      destinationId: selectedDestination.value.id,
+      destinationCity: selectedDestination.value.city,
+      destinationProvince: selectedDestination.value.province,
+      spots: generatedSpots.value,
+    })
+    generatedCultures.value = result.data.cultures
+    notice.value = result.data.notice || `已生成 ${generatedCultures.value.length} 个景点的综合文化解读。`
+  } catch (err) {
+    generatedCultures.value = generatedSpots.value.map((spot) => getCultureByDestination(selectedDestination.value.id, spot))
+    notice.value = `生成综合文化解读失败，已使用静态数据。共 ${generatedCultures.value.length} 个景点。`
+  } finally {
+    selectedSpot.value = generatedSpots.value[0] || null
+    loadingStep.value = null
+  }
 }
 
 function generateRoutePlan() {
@@ -192,10 +205,10 @@ function placeholderClass(stepKey) {
     <header class="hero">
       <div>
         <p class="eyebrow">文化旅行 Agent · 静态原型</p>
-        <h1>输入旅行需求，生成地方、景点与历史文化</h1>
+        <h1>输入旅行需求，生成地方、景点与综合文化解读</h1>
         <p class="hero-desc">
-          项目包含 5 个进度节点：地方推荐、旅游景点生成、历史文化介绍、地图路线规划、推荐相关书籍/短视频/文章。
-          当前已实现全部五个节点：需求输入、地市推荐、景点生成、景点历史文化介绍、地图路线规划和内容资源推荐。
+          项目包含 5 个进度节点：地方推荐、旅游景点生成、综合文化解读、地图路线规划、推荐相关书籍/短视频/文章。
+          当前已实现全部五个节点：需求输入、地市推荐、景点生成、景点综合文化解读、地图路线规划和内容资源推荐。
         </p>
       </div>
     </header>
@@ -371,8 +384,14 @@ function placeholderClass(stepKey) {
       </div>
 
       <div class="actions culture-actions">
-        <button class="primary" type="button" @click="generateCultureIntros">
-          {{ generatedCultures.length ? '重新生成历史文化介绍' : '生成历史文化介绍' }}
+        <button
+          class="primary"
+          type="button"
+          :disabled="loadingStep === 'culture'"
+          @click="generateCultureIntros"
+        >
+          <span v-if="loadingStep === 'culture'" class="spinner"></span>
+          {{ loadingStep === 'culture' ? '正在生成综合文化解读…' : generatedCultures.length ? '重新生成综合文化解读' : '生成综合文化解读' }}
         </button>
         <button class="secondary" type="button" @click="generateRoutePlan">
           {{ generatedRoute ? '重新生成地图路线规划' : '生成地图路线规划' }}
@@ -384,7 +403,7 @@ function placeholderClass(stepKey) {
       <div class="section-title">
         <div>
           <p class="eyebrow">Progress 03 / 05</p>
-          <h2>历史文化介绍</h2>
+          <h2>综合文化解读</h2>
         </div>
         <span class="status">已完成</span>
       </div>
@@ -399,15 +418,21 @@ function placeholderClass(stepKey) {
             type="button"
             @click="selectSpot(generatedSpots.find((spot) => spot.id === culture.spotId))"
           >
-            <strong>{{ culture.name }}</strong>
-            <span>查看历史文化</span>
+            <strong>{{ culture.spotName || culture.name }}</strong>
+            <span>查看综合文化</span>
           </button>
         </aside>
 
         <article class="culture-detail">
           <p class="eyebrow">Culture Detail</p>
-          <h3>{{ selectedSpot?.name || generatedCultures[0].name }}</h3>
-          <div class="culture-text">{{ selectedCultureText }}</div>
+          <h3>{{ selectedSpot?.name || selectedCulture?.spotName || selectedCulture?.name || generatedCultures[0].spotName }}</h3>
+          <p v-if="selectedCulture?.overview" class="culture-overview">{{ selectedCulture.overview }}</p>
+          <div v-if="cultureSections.length" class="culture-sections">
+            <section v-for="section in cultureSections" :key="section.title" class="culture-section">
+              <h4>{{ section.title }}</h4>
+              <p>{{ section.text }}</p>
+            </section>
+          </div>
         </article>
       </div>
     </section>
@@ -531,7 +556,7 @@ function placeholderClass(stepKey) {
               已实现根据已选地市生成静态景点列表。
             </template>
             <template v-else-if="step.key === 'culture'">
-              已实现景点历史文化介绍和景点切换查看。
+              已实现景点历史、风俗、地理等综合文化解读和景点切换查看。
             </template>
             <template v-else-if="step.key === 'route'">
               已实现基于静态数据的高德地图路线规划展示。
