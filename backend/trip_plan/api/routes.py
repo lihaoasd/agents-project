@@ -10,6 +10,8 @@ from trip_plan.api.schemas import (
     AgentMeta,
     PlaceRecommendationRequest,
     PlaceRecommendationResponse,
+    ScenicSpotsRequest,
+    ScenicSpotsResponse,
 )
 from trip_plan.service.trip_plan_service import TripPlanService
 
@@ -34,6 +36,35 @@ async def recommend_places(request: PlaceRecommendationRequest) -> PlaceRecommen
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return PlaceRecommendationResponse(
+        data=result.result,
+        meta=AgentMeta(
+            provider=result.provider,
+            model=result.model,
+            fallback=result.fallback,
+        ),
+    )
+
+
+@router.post(
+    "/scenic-spots",
+    response_model=ScenicSpotsResponse,
+    summary="根据用户需求和选定目的地推荐文化旅行景点",
+)
+async def recommend_scenic_spots(request: ScenicSpotsRequest) -> ScenicSpotsResponse:
+    """根据用户需求+选定目的地生成景点推荐。"""
+
+    try:
+        result = await asyncio.to_thread(
+            trip_plan_service.recommend_scenic_spots,
+            request.requirement,
+            request.destinationId,
+            request.destinationCity,
+            request.destinationProvince,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return ScenicSpotsResponse(
         data=result.result,
         meta=AgentMeta(
             provider=result.provider,

@@ -20,6 +20,24 @@ export async function recommendPlaces(requirement) {
   return body
 }
 
+/**
+ * 根据用户需求和选定目的地生成景点推荐。
+ * @param {{ requirement: string, destinationId: string, destinationCity: string, destinationProvince: string }} params
+ * @returns {Promise<{ data: { spots: Array, notice: string }, meta: object }>}
+ */
+export async function recommendScenicSpots({ requirement, destinationId, destinationCity, destinationProvince }) {
+  const response = await fetch(`${BASE_URL}/api/trip-plan/scenic-spots`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requirement, destinationId, destinationCity, destinationProvince }),
+  })
+  const body = await response.json()
+  if (!response.ok) {
+    throw new ApiError(body?.detail || body?.error?.message || '请求失败', response.status)
+  }
+  return body
+}
+
 class ApiError extends Error {
   constructor(message, status) {
     super(message)

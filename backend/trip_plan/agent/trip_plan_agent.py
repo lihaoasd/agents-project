@@ -1,4 +1,8 @@
-"""行程规划专用 Agent。"""
+"""行程规划专用 Agent。
+
+注意：此 Agent 使用旧版 TravelPlan / TravelDestination / ScenicSpot 模型，
+与 PlaceRecommendationAgent / ScenicSpotAgent 分属不同功能模块，暂不调整。
+"""
 
 from __future__ import annotations
 
@@ -33,7 +37,11 @@ def _load_task_prompt() -> str:
 
 
 class TripPlanAgent(BaseAgent):
-    """文化旅行行程规划 Agent。"""
+    """文化旅行行程规划 Agent。
+
+    注意：此 Agent 使用旧版 TravelPlan / TravelDestination 模型，
+    与 PlaceRecommendationAgent / ScenicSpotAgent 分属不同功能模块，暂不调整。
+    """
 
     @property
     def role_prompt(self) -> str:
@@ -102,7 +110,7 @@ class TripPlanAgent(BaseAgent):
 
 请生成完整行程规划，字段必须覆盖：
 - 推荐省份、地市和理由
-- 3 到 {self.trip_plan_config.max_spot_recommendations} 个景点，每个景点包含地址、推荐理由和文化标签
+- 3 到 {self.trip_plan_config.max_spot_recommendations} 个景点，每个景点包含 id、地址、推荐理由和文化标签
 - 景点之间的路线分段
 - 书籍、短视频、文章等内容推荐
 - 免责声明：{self.trip_plan_config.disclaimer}"""

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import '../styles/culturalTravel.css'
-import { recommendPlaces } from '../api/tripPlanApi'
+import { recommendPlaces, recommendScenicSpots } from '../api/tripPlanApi'
 import {
   getResourcesByDestination,
   getRouteByDestination,
@@ -84,14 +84,34 @@ function selectDestination(destination) {
   notice.value = '已完成“地方推荐”节点。请选择“生成旅游景点”继续。'
 }
 
-function generateSpots() {
+async function generateSpots() {
   if (!selectedDestination.value) return
-  generatedSpots.value = getSpotsByDestination(selectedDestination.value.id)
-  selectedSpot.value = generatedSpots.value[0] || null
+  generatedSpots.value = []
+  selectedSpot.value = null
   generatedCultures.value = []
   generatedRoute.value = null
   generatedResources.value = null
-  notice.value = `已根据 ${selectedDestination.value.city} 生成 ${generatedSpots.value.length} 个文化旅行景点。`
+  loadingStep.value = 'spots'
+  try {
+    const result = await recommendScenicSpots({
+      requirement: requirement.value.trim(),
+      destinationId: selectedDestination.value.id,
+      destinationCity: selectedDestination.value.city,
+      destinationProvince: selectedDestination.value.province,
+    })
+    generatedSpots.value = result.data.spots
+    selectedSpot.value = generatedSpots.value[0] || null
+    generatedCultures.value = []
+    generatedRoute.value = null
+    generatedResources.value = null
+    notice.value = result.data.notice || `已根据 ${selectedDestination.value.city} 生成 ${generatedSpots.value.length} 个文化旅行景点。`
+  } catch (err) {
+    generatedSpots.value = getSpotsByDestination(selectedDestination.value.id)
+    selectedSpot.value = generatedSpots.value[0] || null
+    notice.value = `生成景点失败，已使用静态数据。共 ${generatedSpots.value.length} 个景点。`
+  } finally {
+    loadingStep.value = null
+  }
 }
 
 function selectSpot(spot) {
@@ -278,8 +298,14 @@ function placeholderClass(stepKey) {
       </div>
 
       <div class="actions">
-        <button class="primary" type="button" @click="generateSpots">
-          {{ generatedSpots.length ? '重新生成旅游景点' : '生成旅游景点' }}
+        <button
+          class="primary"
+          type="button"
+          :disabled="loadingStep === 'spots'"
+          @click="generateSpots"
+        >
+          <span v-if="loadingStep === 'spots'" class="spinner"></span>
+          {{ loadingStep === 'spots' ? '正在分析需求，推荐景点…' : generatedSpots.length ? '重新生成旅游景点' : '生成旅游景点' }}
         </button>
       </div>
 
@@ -295,8 +321,11 @@ function placeholderClass(stepKey) {
         <span class="status">已完成</span>
       </div>
 
-      <p class="section-desc">
-        以下为根据 {{ selectedDestination.city }} 生成的文化旅行景点，当前使用静态数据展示。
+      <p class="section-desc">为你推荐了 <strong>{{ generatedSpots.length }}</strong> 个文化旅行景点，可左右滑动浏览</p>
+
+      <p v-if="loadingStep === 'spots'" class="loading">
+        <span class="spinner"></span>
+        正在调用大模型分析用户需求和目的地，推荐合适景点，请稍候...
       </p>
 
       <div class="spot-grid">
@@ -307,7 +336,12 @@ function placeholderClass(stepKey) {
           :class="{ selected: selectedSpot?.id === spot.id }"
           @click="selectSpot(spot)"
         >
-          <img class="spot-image" :src="spot.imageUrl" :alt="spot.imageAlt" loading="lazy" />
+          <img
+            class="spot-image"
+            :src="spot.imageUrl || `https://picsum.photos/seed/cultural-${selectedDestination?.id || 'none'}-${spot.id}/640/420`"
+            :alt="spot.imageAlt || spot.name"
+            loading="lazy"
+          />
           <div class="spot-body">
             <div class="spot-meta">
               <span>{{ spot.type }}</span>

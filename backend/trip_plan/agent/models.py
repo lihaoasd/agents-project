@@ -16,10 +16,17 @@ class TravelDestination(BaseModel):
 class ScenicSpot(BaseModel):
     """推荐景点。"""
 
-    name: str
+    id: str = Field(description="景点标识")
+    name: str = Field(description="景点名称")
     address: str = Field(description="景点地址")
-    reason: str = Field(description="推荐理由")
-    tags: list[str] = Field(default_factory=list, description="文化标签，例如 历史、博物馆、非遗")
+    type: str = Field(description="景点类型，如遗址博物馆、综合博物馆、文化景观")
+    recommendReason: str = Field(description="推荐理由")
+    visitTime: str = Field(description="建议游览时长")
+    ticket: str = Field(description="门票信息")
+    openingHours: str = Field(description="开放时间")
+    cultureTags: list[str] = Field(default_factory=list, description="文化标签")
+    imageAlt: str = Field(default="", description="图片替代文字")
+    imageUrl: str = Field(default="", description="图片链接")
 
 
 class RouteSegment(BaseModel):
@@ -85,5 +92,23 @@ class PlaceRecommendationAgentResult(BaseModel):
     """地方推荐 Agent 运行结果包装。"""
 
     result: PlaceRecommendationResult
+    model: str
+    provider: str
+
+
+class ScenicSpotsResult(BaseModel):
+    """景点推荐结果。"""
+
+    spots: list[ScenicSpot] = Field(
+        default_factory=list,
+        description="推荐景点列表，默认 3-5 个",
+    )
+    notice: str = Field(default="已根据需求生成景点推荐。")
+
+
+class ScenicSpotsAgentResult(BaseModel):
+    """景点推荐 Agent 运行结果包装。"""
+
+    result: ScenicSpotsResult
     model: str
     provider: str
