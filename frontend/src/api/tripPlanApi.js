@@ -68,6 +68,44 @@ export async function recommendCulturalInterpretations({
   return body
 }
 
+/**
+ * 根据推荐目的地和已选景点直接规划地图路线。
+ * @param {{ requirement: string, destinationId: string, destinationCity: string, destinationProvince: string, spots: Array, mode?: string, origin?: Object, destination?: Object, constraints?: Object }} params
+ * @returns {Promise<{ data: { mode: string, provider: string, fallback: boolean, orderedSpots: Array, segments: Array }, meta: object }>}
+ */
+export async function planRoute({
+  requirement,
+  destinationId,
+  destinationCity,
+  destinationProvince,
+  spots,
+  mode = 'auto',
+  origin,
+  destination,
+  constraints = {},
+}) {
+  const response = await fetch(`${BASE_URL}/api/trip-plan/routes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requirement,
+      destinationId,
+      destinationCity,
+      destinationProvince,
+      spots,
+      mode,
+      origin,
+      destination,
+      constraints,
+    }),
+  })
+  const body = await response.json()
+  if (!response.ok) {
+    throw new ApiError(body?.detail || body?.error?.message || '请求失败', response.status)
+  }
+  return body
+}
+
 class ApiError extends Error {
   constructor(message, status) {
     super(message)

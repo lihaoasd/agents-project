@@ -28,6 +28,8 @@ class ScenicSpot(BaseModel):
     imageAlt: str = Field(default="", description="图片替代文字")
     imageUrl: str = Field(default="", description="图片链接")
     imageSearchQuery: str = Field(default="", description="用于 Unsplash 英文检索的查询词")
+    lng: float | None = Field(default=None, description="经度")
+    lat: float | None = Field(default=None, description="纬度")
 
 
 class RouteSegment(BaseModel):

@@ -12,6 +12,8 @@ from trip_plan.api.schemas import (
     CulturalInterpretationsResponse,
     PlaceRecommendationRequest,
     PlaceRecommendationResponse,
+    RoutePlanRequest,
+    RoutePlanResponse,
     ScenicSpotsRequest,
     ScenicSpotsResponse,
 )
@@ -99,6 +101,39 @@ async def recommend_cultural_interpretations(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return CulturalInterpretationsResponse(
+        data=result.result,
+        meta=AgentMeta(
+            provider=result.provider,
+            model=result.model,
+            fallback=result.fallback,
+        ),
+    )
+
+
+@router.post(
+    "/routes",
+    response_model=RoutePlanResponse,
+    summary="根据推荐目的地和已选景点直接规划地图路线",
+)
+async def plan_route(request: RoutePlanRequest) -> RoutePlanResponse:
+    """根据推荐目的地、景点和行程约束直接规划自驾或公共交通路线。"""
+
+    try:
+        result = await trip_plan_service.plan_route(
+            request.requirement,
+            request.destinationId,
+            request.destinationCity,
+            request.destinationProvince,
+            request.spots,
+            request.mode,
+            request.origin.model_dump() if request.origin else None,
+            request.destination.model_dump() if request.destination else None,
+            request.constraints,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return RoutePlanResponse(
         data=result.result,
         meta=AgentMeta(
             provider=result.provider,

@@ -18,6 +18,7 @@ from trip_plan.agent.models import (
 from trip_plan.agent.cultural_interpretation_agent import CulturalInterpretationAgent
 from trip_plan.agent.place_recommendation_agent import PlaceRecommendationAgent
 from trip_plan.agent.scenic_spot_agent import ScenicSpotAgent
+from trip_plan.service.route_plan_service import RoutePlanService
 from trip_plan.service.unsplash_image_service import UnsplashImageService
 
 FALLBACK_DESTINATIONS = [
@@ -367,6 +368,43 @@ class TripPlanService:
                 spots,
                 "智能文化解读暂时不可用，已为你展示通用文化解读。",
             )
+
+    async def plan_route(
+        self,
+        requirement: str,
+        destination_id: str,
+        destination_city: str,
+        destination_province: str,
+        spots: list[ScenicSpot],
+        mode: str = "auto",
+        origin: dict | None = None,
+        destination: dict | None = None,
+        constraints: dict | None = None,
+    ):
+        """根据推荐目的地和景点直接规划路线。"""
+
+        if not requirement:
+            logger.warning("路线规划请求缺少 requirement")
+            raise ValueError("requirement 不能为空")
+        if not destination_id:
+            logger.warning("路线规划请求缺少 destination_id")
+            raise ValueError("destination_id 不能为空")
+        if not spots:
+            logger.warning("路线规划请求缺少 spots")
+            raise ValueError("spots 不能为空")
+
+        route_service = RoutePlanService()
+        return await route_service.plan(
+            requirement=requirement,
+            destination_id=destination_id,
+            destination_city=destination_city,
+            destination_province=destination_province,
+            spots=spots,
+            mode=mode,
+            origin=origin,
+            destination=destination,
+            constraints=constraints,
+        )
 
     @staticmethod
     def _normalize_cultural_interpretations(

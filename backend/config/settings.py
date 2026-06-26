@@ -80,8 +80,29 @@ class LLMConfig(BaseSettings):
         return self
 
 
+class AmapConfig(BaseSettings):
+    """高德地图配置。"""
+
+    web_service_key: str = Field(default="", validation_alias="AMAP_WEB_SERVICE_KEY")
+    js_api_key: str = Field(default="", validation_alias="AMAP_JS_API_KEY")
+    js_security_code: str = Field(default="", validation_alias="AMAP_JS_SECURITY_CODE")
+
+    _env_file: Path = PrivateAttr()
+
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    def __init__(self, env_file: Path | None = None) -> None:
+        backend_dir = Path(__file__).resolve().parents[1]
+        self._env_file = env_file or backend_dir / ".env"
+        super().__init__(_env_file=self._env_file, _env_file_encoding="utf-8", _env={})
+
+
 __all__ = [
     "AppConfig",
     "LLMConfig",
     "LLMProvider",
+    "AmapConfig",
 ]

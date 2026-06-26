@@ -1,11 +1,11 @@
 <script setup>
 import { computed, ref } from 'vue'
 import '../styles/culturalTravel.css'
-import { recommendCulturalInterpretations, recommendPlaces, recommendScenicSpots } from '../api/tripPlanApi'
+import AmapRouteMap from '../components/AmapRouteMap.vue'
+import { planRoute, recommendCulturalInterpretations, recommendPlaces, recommendScenicSpots } from '../api/tripPlanApi'
 import {
   getCultureByDestination,
   getResourcesByDestination,
-  getRouteByDestination,
   getSpotsByDestination,
   progressSteps,
 } from '../data/staticTravelData'
@@ -18,6 +18,12 @@ const selectedSpot = ref(null)
 const generatedCultures = ref([])
 const generatedRoute = ref(null)
 const generatedResources = ref(null)
+const routeMode = ref('auto')
+const routePace = ref('balanced')
+const routeOrigin = ref('')
+const routeDestination = ref('')
+const routePlanning = ref(false)
+const routeError = ref('')
 const resourceTab = ref('books')
 const notice = ref('')
 const loadingStep = ref(null)
@@ -44,6 +50,46 @@ const cultureSections = computed(() => {
     { title: '地理特点', text: selectedCulture.value.geography || '' },
     { title: '美食提示', text: selectedCulture.value.foodSuggestion || '' },
   ].filter((section) => section.text)
+})
+
+const routeMapPoints = computed(() => {
+  const orderedSpots = generatedRoute.value?.orderedSpots || []
+  const points = orderedSpots
+    .map((spot, index) => ({
+      name: spot.name,
+      index,
+      lng: Number(spot.lng),
+      lat: Number(spot.lat),
+    }))
+    .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat))
+
+  if (!points.length) {
+    return orderedSpots.map((spot, index) => ({
+      name: spot.name,
+      index,
+      x: 18 + index * 18,
+      y: 68 - index * 14,
+    }))
+  }
+
+  const lngValues = points.map((point) => point.lng)
+  const latValues = points.map((point) => point.lat)
+  const minLng = Math.min(...lngValues)
+  const maxLng = Math.max(...lngValues)
+  const minLat = Math.min(...latValues)
+  const maxLat = Math.max(...latValues)
+  const lngSpan = maxLng - minLng || 1
+  const latSpan = maxLat - minLat || 1
+
+  return points.map((point) => ({
+    ...point,
+    x: 12 + ((point.lng - minLng) / lngSpan) * 76,
+    y: 16 + (1 - (point.lat - minLat) / latSpan) * 68,
+  }))
+})
+
+const mapLinePoints = computed(() => {
+  return routeMapPoints.value.map((point) => `${point.x},${point.y}`).join(' ')
 })
 
 async function recommendCities() {
@@ -74,6 +120,12 @@ function resetAfterCity() {
   generatedCultures.value = []
   generatedRoute.value = null
   generatedResources.value = null
+  routeMode.value = 'auto'
+  routePace.value = 'balanced'
+  routeOrigin.value = ''
+  routeDestination.value = ''
+  routePlanning.value = false
+  routeError.value = ''
 }
 
 function selectDestination(destination) {
@@ -94,6 +146,8 @@ async function generateSpots() {
   generatedCultures.value = []
   generatedRoute.value = null
   generatedResources.value = null
+  routePlanning.value = false
+  routeError.value = ''
   loadingStep.value = 'spots'
   try {
     const result = await recommendScenicSpots({
@@ -127,6 +181,8 @@ async function generateCultureIntros() {
   generatedCultures.value = []
   generatedRoute.value = null
   generatedResources.value = null
+  routePlanning.value = false
+  routeError.value = ''
   try {
     const result = await recommendCulturalInterpretations({
       requirement: requirement.value.trim(),
@@ -146,11 +202,37 @@ async function generateCultureIntros() {
   }
 }
 
-function generateRoutePlan() {
-  if (!selectedDestination.value) return
-  generatedRoute.value = getRouteByDestination(selectedDestination.value.id)
+async function generateRoutePlan() {
+  if (!selectedDestination.value || !generatedSpots.value.length) return
+  routePlanning.value = true
+  routeError.value = ''
   generatedResources.value = null
-  notice.value = '已生成基于高德地图思路的静态路线规划。真实地图路线可在后续接入高德 API Key。'
+  try {
+    const result = await planRoute({
+      requirement: requirement.value.trim(),
+      destinationId: selectedDestination.value.id,
+      destinationCity: selectedDestination.value.city,
+      destinationProvince: selectedDestination.value.province,
+      spots: generatedSpots.value,
+      mode: routeMode.value,
+      origin: routeOrigin.value ? { name: routeOrigin.value } : undefined,
+      destination: routeDestination.value ? { name: routeDestination.value } : undefined,
+      constraints: {
+        pace: routePace.value,
+        preferTransit: routeMode.value === 'transit',
+        avoidLongWalk: routePace.value === 'relaxed',
+      },
+    })
+    generatedRoute.value = result.data
+    notice.value = result.data.fallback
+      ? '高德路线暂时不可用，已使用备用路线。'
+      : `已根据 ${selectedDestination.value.city} 生成真实地图路线规划。`
+  } catch (err) {
+    routeError.value = err.message || '路线规划失败'
+    notice.value = routeError.value
+  } finally {
+    routePlanning.value = false
+  }
 }
 
 function generateResources() {
@@ -171,6 +253,13 @@ function resourceLabel(type) {
     videos: '短视频',
     articles: '文章',
   }[type] || '推荐'
+}
+
+function markerStyle(point) {
+  return {
+    left: `${point.x}%`,
+    top: `${point.y}%`,
+  }
 }
 
 function pinStyle(index) {
@@ -383,6 +472,33 @@ function placeholderClass(stepKey) {
         </article>
       </div>
 
+      <div class="route-controls">
+        <label>
+          出行方式
+          <select v-model="routeMode">
+            <option value="auto">自动</option>
+            <option value="driving">自驾</option>
+            <option value="transit">公共交通</option>
+          </select>
+        </label>
+        <label>
+          游玩节奏
+          <select v-model="routePace">
+            <option value="relaxed">轻松</option>
+            <option value="balanced">均衡</option>
+            <option value="intensive">紧凑</option>
+          </select>
+        </label>
+        <label>
+          起点
+          <input v-model="routeOrigin" placeholder="例如：北京南站，留空则使用城市中心" />
+        </label>
+        <label>
+          终点
+          <input v-model="routeDestination" placeholder="例如：首都机场，留空则返回城市中心" />
+        </label>
+      </div>
+
       <div class="actions culture-actions">
         <button
           class="primary"
@@ -393,8 +509,9 @@ function placeholderClass(stepKey) {
           <span v-if="loadingStep === 'culture'" class="spinner"></span>
           {{ loadingStep === 'culture' ? '正在生成综合文化解读…' : generatedCultures.length ? '重新生成综合文化解读' : '生成综合文化解读' }}
         </button>
-        <button class="secondary" type="button" @click="generateRoutePlan">
-          {{ generatedRoute ? '重新生成地图路线规划' : '生成地图路线规划' }}
+        <button class="secondary" type="button" :disabled="routePlanning" @click="generateRoutePlan">
+          <span v-if="routePlanning" class="spinner"></span>
+          {{ routePlanning ? '正在调用高德规划路线…' : generatedRoute ? '重新生成地图路线规划' : '生成地图路线规划' }}
         </button>
       </div>
     </section>
@@ -447,22 +564,20 @@ function placeholderClass(stepKey) {
       </div>
 
       <p class="section-desc">
-        当前使用静态路线数据模拟高德地图规划结果。后续接入高德 API Key 后，可生成真实驾车、步行或公交路线。
+        已根据推荐目的地、景点位置和你的行程要求生成路线。高德服务不可用时会自动使用备用路线。
       </p>
 
       <div class="route-layout">
-        <div class="map-placeholder">
-          <div class="map-header">
-            <strong>{{ generatedRoute.provider }}</strong>
-            <a :href="generatedRoute.navUrl" target="_blank" rel="noreferrer">打开高德地图</a>
-          </div>
-          <div class="map-canvas">
-            <div v-for="(spot, index) in generatedSpots" :key="spot.id" class="map-pin" :style="pinStyle(index)">
-              <span>{{ index + 1 }}</span>
-            </div>
-            <div class="map-route-line" />
-          </div>
-        </div>
+        <AmapRouteMap
+          :ordered-spots="generatedRoute.orderedSpots"
+          :segments="generatedRoute.segments || generatedRoute.legs || []"
+          :origin="generatedRoute.origin || null"
+          :destination="generatedRoute.destinationPoint || generatedRoute.origin || null"
+          :mode="generatedRoute.mode || 'auto'"
+          :nav-url="generatedRoute.navUrl || ''"
+          :total-distance="generatedRoute.totalDistance || ''"
+          :total-duration="generatedRoute.totalDuration || ''"
+        />
 
         <aside class="route-summary">
           <div class="summary-card">
@@ -473,17 +588,18 @@ function placeholderClass(stepKey) {
             <span>预计用时</span>
             <strong>{{ generatedRoute.totalDuration }}</strong>
           </div>
-          <p>{{ generatedRoute.description }}</p>
+          <p>{{ generatedRoute.description || generatedRoute.notices?.[0] }}</p>
+          <p v-if="generatedRoute.fallback" class="warning">当前为备用路线</p>
         </aside>
       </div>
 
       <div class="route-steps">
-        <article v-for="(leg, index) in generatedRoute.legs" :key="leg.from + leg.to" class="route-step">
+        <article v-for="(leg, index) in (generatedRoute.segments || generatedRoute.legs || [])" :key="leg.from + leg.to + index" class="route-step">
           <div class="route-step-index">{{ index + 1 }}</div>
           <div>
             <h3>{{ leg.from }} → {{ leg.to }}</h3>
-            <p>{{ leg.distance }} · {{ leg.duration }}</p>
-            <span>{{ leg.tip }}</span>
+            <p>{{ leg.distance || leg.distanceMeters }} · {{ leg.duration || leg.durationSeconds }}</p>
+            <span>{{ leg.detail || leg.tip }}</span>
           </div>
         </article>
       </div>
@@ -559,7 +675,7 @@ function placeholderClass(stepKey) {
               已实现景点历史、风俗、地理等综合文化解读和景点切换查看。
             </template>
             <template v-else-if="step.key === 'route'">
-              已实现基于静态数据的高德地图路线规划展示。
+              已实现基于推荐目的地、景点位置和高德 API 的路线规划。
             </template>
             <template v-else-if="step.key === 'resources'">
               已实现相关书籍、短视频和文章推荐。

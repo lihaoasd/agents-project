@@ -4,10 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Vue</title>
+    <title>文化旅行</title>
+    <script>
+      window._AMapSecurityConfig = {
+        securityJsCode: 'ae177c67b4b5cd9bbda063ad07c768e0'
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=0f554f66ceffc4482dba30e84232c87d&plugin=AMap.Driving,AMap.Transfer,AMap.Geocoder,AMap.PlaceSearch"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
