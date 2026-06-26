@@ -6,9 +6,14 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from logging_config import get_logger
 from trip_plan.agent.models import ScenicSpot
+from trip_plan.agent.route_plan_agent import RoutePlanAgent
+from trip_plan.mcp.amap_mcp_client import AmapMcpError
 from trip_plan.service.amap_service import AmapError, AmapService
 from trip_plan.service.route_optimizer import RouteConstraints, RouteOptimizer
+
+logger = get_logger("trip_plan.service.route_plan")
 
 STATIC_ROUTES: dict[str, dict[str, Any]] = {
     "xian": {
@@ -108,7 +113,15 @@ class RoutePlanService:
         destination: dict[str, Any] | None = None,
         constraints: dict[str, Any] | None = None,
     ) -> RoutePlanServiceResult:
-        """规划路线，高德失败时降级到静态路线。"""
+        """规划路线：MCP Agent → Web API → 静态兜底。"""
+
+        logger.info(
+            "=== 路线规划开始 === destination=%s city=%s spots=%s mode=%s",
+            destination_id,
+            destination_city,
+            len(spots),
+            mode,
+        )
 
         normalized_constraints = self._normalize_constraints(mode, constraints or {}, requirement)
         optimizer = RouteOptimizer(destination_id, normalized_constraints)
@@ -116,7 +129,49 @@ class RoutePlanService:
         resolved_origin = optimizer.resolve_origin(origin)
         resolved_destination = optimizer.resolve_destination(destination)
 
+        logger.info(
+            "约束解析完成 mode=%s pace=%s prefer_transit=%s",
+            resolved_mode,
+            normalized_constraints.pace,
+            normalized_constraints.prefer_transit,
+        )
+
+        # 1. 优先使用 MCP Agent（LLM 自主调用高德工具）
         try:
+            logger.info("→ 尝试 MCP Agent 路线规划...")
+            result = await self._plan_with_mcp_agent(
+                requirement=requirement,
+                destination_id=destination_id,
+                destination_city=destination_city,
+                destination_province=destination_province,
+                spots=spots,
+                mode=resolved_mode,
+                origin=resolved_origin,
+                destination=resolved_destination,
+                constraints=normalized_constraints,
+            )
+            logger.info(
+                "← MCP Agent 路线规划成功 provider=%s model=%s spots=%s segments=%s",
+                result.get("provider", "mcp-amap"),
+                result.get("model", "N/A"),
+                len(result.get("orderedSpots", [])),
+                len(result.get("segments", [])),
+            )
+            return RoutePlanServiceResult(
+                result=result,
+                provider=result.get("provider", "mcp-amap"),
+                model=result.get("model", "mcp-agent"),
+                fallback=False,
+            )
+        except (AmapMcpError, AmapError) as mcp_exc:
+            logger.warning(
+                "MCP Agent 路线规划失败 → 降级到 Web API: %s",
+                mcp_exc,
+            )
+
+        # 2. 降级到高德 Web API 直接调用
+        try:
+            logger.info("→ 尝试高德 Web API 路线规划...")
             result = await self._plan_with_amap(
                 requirement=requirement,
                 destination_id=destination_id,
@@ -128,6 +183,10 @@ class RoutePlanService:
                 destination=resolved_destination,
                 constraints=normalized_constraints,
             )
+            logger.info(
+                "← 高德 Web API 路线规划成功 segments=%s",
+                len(result.get("segments", [])),
+            )
             return RoutePlanServiceResult(
                 result=result,
                 provider="amap",
@@ -135,13 +194,82 @@ class RoutePlanService:
                 fallback=False,
             )
         except AmapError as exc:
-            result = self._fallback_route(destination_id, spots, resolved_mode, str(exc))
-            return RoutePlanServiceResult(
-                result=result,
-                provider="static",
-                model="static-route",
-                fallback=True,
+            logger.warning("高德 Web API 路线规划失败 → 降级到静态路线: %s", exc)
+
+        # 3. 静态路线兜底
+        logger.info("→ 使用静态路线兜底...")
+        result = self._fallback_route(destination_id, spots, resolved_mode, "MCP 和 Web API 均不可用")
+        logger.info(
+            "← 静态路线兜底 destination=%s fallback=%s",
+            destination_id,
+            destination_id in STATIC_ROUTES,
+        )
+        return RoutePlanServiceResult(
+            result=result,
+            provider="static",
+            model="static-route",
+            fallback=True,
+        )
+
+    async def _plan_with_mcp_agent(
+        self,
+        requirement: str,
+        destination_id: str,
+        destination_city: str,
+        destination_province: str,
+        spots: list[ScenicSpot],
+        mode: str,
+        origin: dict[str, Any],
+        destination: dict[str, Any],
+        constraints: RouteConstraints,
+    ) -> dict[str, Any]:
+        """使用 MCP Agent（LangGraph + 高德 MCP 工具）规划路线。"""
+        logger.debug("_plan_with_mcp_agent 开始约束=%s", constraints)
+        agent = RoutePlanAgent()
+        try:
+            agent_result = await agent.run(
+                requirement=requirement,
+                destination_id=destination_id,
+                destination_city=destination_city,
+                destination_province=destination_province,
+                spots=spots,
+                mode=mode,
+                origin=origin,
+                destination=destination,
+                constraints={
+                    "pace": constraints.pace,
+                    "preferTransit": constraints.prefer_transit,
+                    "avoidLongWalk": constraints.avoid_long_walk,
+                    "totalDuration": constraints.total_duration,
+                },
             )
+        finally:
+            await agent.close()
+
+        result = agent_result.result
+        # 合并元信息
+        result.setdefault("provider", agent_result.provider)
+        result.setdefault("model", agent_result.model)
+        result.setdefault("fallback", False)
+        result.setdefault("destination", {
+            "id": destination_id,
+            "city": destination_city,
+            "province": destination_province,
+        })
+        result.setdefault("origin", origin)
+        result.setdefault("destinationPoint", destination)
+        result.setdefault("mode", mode)
+        result.setdefault("navUrl", "")
+        result.setdefault("notices", [])
+
+        # 补充 segments 中每条路段的距离/耗时格式化
+        result["segments"] = self._ensure_segment_units(result.get("segments", []))
+
+        # 确保 orderedSpots 格式兼容
+        result["orderedSpots"] = self._ensure_lng_lat_present(
+            result.get("orderedSpots", [])
+        )
+        return result
 
     async def _plan_with_amap(
         self,
@@ -155,10 +283,12 @@ class RoutePlanService:
         destination: dict[str, Any],
         constraints: RouteConstraints,
     ) -> dict[str, Any]:
+        logger.debug("_plan_with_amap 开始 spots=%s mode=%s", len(spots), mode)
         service = self.amap_service or AmapService()
         processed_spots = self._process_spots(service, spots, destination_city)
         if not processed_spots:
             raise AmapError("没有可用于规划的景点")
+        logger.info("Web API 处理后景点: %s -> %s", len(spots), len(processed_spots))
 
         origin = await self._geocode_point(service, origin, destination_city)
         destination = await self._geocode_point(service, destination, destination_city)
@@ -366,6 +496,22 @@ class RoutePlanService:
             spot.setdefault("lng", None)
             spot.setdefault("lat", None)
         return spots
+
+    @staticmethod
+    def _ensure_segment_units(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """确保 segments 中每条都有带单位的 distance 和 duration 字段。
+
+        MCP Agent 输出只含 distance/duration 数字（米/秒），
+        这里补充 ``distanceText`` 和 ``durationText`` 用于前端展示。
+        """
+        for seg in segments:
+            distance_m = seg.get("distance", seg.get("distanceMeters", 0))
+            duration_s = seg.get("duration", seg.get("durationSeconds", 0))
+            seg.setdefault("distanceMeters", int(distance_m) if isinstance(distance_m, (int, float)) else 0)
+            seg.setdefault("durationSeconds", int(duration_s) if isinstance(duration_s, (int, float)) else 0)
+            seg.setdefault("distance", RoutePlanService._format_distance(int(distance_m or 0)))
+            seg.setdefault("duration", RoutePlanService._format_duration(int(duration_s or 0)))
+        return segments
 
     @staticmethod
     def _spot_to_point(spot: ScenicSpot) -> dict[str, Any]:

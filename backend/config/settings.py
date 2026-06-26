@@ -84,6 +84,7 @@ class AmapConfig(BaseSettings):
     """高德地图配置。"""
 
     web_service_key: str = Field(default="", validation_alias="AMAP_WEB_SERVICE_KEY")
+    mcp_key: str = Field(default="", validation_alias="AMAP_MCP_KEY")
     js_api_key: str = Field(default="", validation_alias="AMAP_JS_API_KEY")
     js_security_code: str = Field(default="", validation_alias="AMAP_JS_SECURITY_CODE")
 

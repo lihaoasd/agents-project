@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"cd d:/lihao/cultural_travel/backend && python -c \\\\\"\\\\nimport py_compile\\\\npy_compile.compile\\('trip_plan/prompts/__init__.py', doraise=True\\)\\\\npy_compile.compile\\('trip_plan/agent/route_plan_agent.py', doraise=True\\)\\\\nprint\\('Compile: OK'\\)\\\\n\\\\nfrom trip_plan.prompts import load_prompt\\\\ncontent = load_prompt\\('route_plan_system.txt'\\)\\\\nprint\\(f'Prompt loaded \\({len\\(content\\)} chars\\)'\\)\\\\nassert '高德地图' in content\\\\nassert 'orderedSpots' in content\\\\nprint\\('Prompt content: OK'\\)\\\\n\\\\nfrom trip_plan.agent.route_plan_agent import RoutePlanAgent\\\\nprint\\('RoutePlanAgent import: OK'\\)\\\\nprint\\('All checks passed'\\)\\\\n\\\\\"\", \"description\": \"Verify prompt loading from file, compile and import checks\"})",
+      "Bash(find trip_plan -name \"prompts*\" -o -name \"load_prompt*\")",
+      "Bash(ls trip_plan/prompts*)",
+      "Bash(ls trip_plan/config/prompts*)",
+      "Bash(rm -rf trip_plan/prompts/config)",
+      "Bash(mkdir -p trip_plan/prompts/config/en)",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && cat trip_plan/agent/route_plan_agent.py\")",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && cat trip_plan/prompts/__init__.py\", \"description\": \"Check current load_prompt implementation\"})",
+      "Bash(python -c ' *)",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && python -c \\\\\"import py_compile; py_compile.compile\\('trip_plan/agent/route_plan_agent.py', doraise=True\\); print\\('OK'\\)\\\\\"\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('trip_plan/agent/route_plan_agent.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && python -c \\\\\"import py_compile; py_compile.compile\\('trip_plan/service/route_plan_service.py', doraise=True\\); print\\('OK'\\)\\\\\"\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('trip_plan/service/route_plan_service.py', doraise=True\\); py_compile.compile\\('trip_plan/agent/route_plan_agent.py', doraise=True\\); py_compile.compile\\('trip_plan/mcp/amap_mcp_client.py', doraise=True\\); print\\('All OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('trip_plan/agent/route_plan_agent.py', doraise=True\\); print\\('compile OK'\\)\")",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && grep -n \"_repair_common_json_issues\" trip_plan/agent/route_plan_agent.py && sed -n '340,357p' trip_plan/agent/route_plan_agent.py\", \"description\": \"Read exact current content of _repair_common_json_issues\"})",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && sed -n '342,354p' trip_plan/agent/route_plan_agent.py\")",
+      "Bash(python -c \"from trip_plan.agent.route_plan_agent import _repair_common_json_issues; print\\('import ok'\\)\")",
+      "Bash(python -c \"with open\\('trip_plan/agent/route_plan_agent.py', 'rb'\\) as f: data = f.read\\(\\); idx = data.find\\(b'_repair_common'\\); tail = data[idx:idx+600]; print\\(tail.decode\\('utf-8', errors='replace'\\)\\)\")",
+      "Bash(python _test_json_parse.py)"
+    ]
+  }
+}
