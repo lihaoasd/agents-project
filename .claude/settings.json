@@ -71,7 +71,26 @@
       "Bash(\"/d/lihao/Programs/Python310/python build.py\", \"dangerouslyDisableSandbox\": true})",
       "Bash(\"cat > *)",
       "Bash(/d/lihao/Programs/Python310/python -c \"import subprocess,os,sys; sys.stdout.reconfigure\\(encoding='utf-8'\\); env=os.environ.copy\\(\\); env['PATH']=r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64;'+env['PATH']; r=subprocess.run\\([r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64\\\\npx.cmd','vite','build'],cwd=r'd:\\\\lihao\\\\cultural_travel\\\\frontend',capture_output=True,text=True,env=env,shell=True,encoding='utf-8',errors='replace'\\); print\\(r.stdout[:500]\\); print\\('RC:', r.returncode\\)\")",
-      "Bash(\"/usr/bin/rm -f /d/lihao/cultural_travel/frontend/build.py\", \"description\" string=\"false\")"
+      "Bash(\"/usr/bin/rm -f /d/lihao/cultural_travel/frontend/build.py\", \"description\" string=\"false\")",
+      "Bash(\"cmd.exe /c \\\\\"type d:\\\\\\\\lihao\\\\\\\\cultural_travel\\\\\\\\frontend\\\\\\\\src\\\\\\\\components\\\\\\\\AmapRouteMap.vue\\\\\"\", \"description\" string=\"true\")",
+      "Bash(\"head -60 d:/lihao/cultural_travel/frontend/src/components/AmapRouteMap.vue\")",
+      "Bash(/d/lihao/Programs/Python310/python -c \"f=open\\('d:/lihao/cultural_travel/frontend/src/components/AmapRouteMap.vue','r',encoding='utf-8'\\); print\\(f.read\\(\\)[:3000]\\); f.close\\(\\)\")",
+      "Bash(\"/d/lihao/Programs/Python310/python -c \\\\\"with open\\('d:/lihao/cultural_travel/frontend/src/styles/travelJournal.css','r',encoding='utf-8'\\) as f: content=f.read\\(\\); print\\(content[-200:]\\)\\\\\"\", \"dangerouslyDisableSandbox\": true)",
+      "Bash(\"/d/lihao/Programs/Python310/python -S -c \\\\\"\\\\nimport sys\\\\nwith open\\('d:/lihao/cultural_travel/frontend/src/styles/travelJournal.css', 'r', encoding='utf-8'\\) as f:\\\\n    content = f.read\\(\\)\\\\nprint\\(content[-300:]\\)\\\\n\\\\\"\", \"description\" string=\"false\")",
+      "Bash(/d/lihao/Programs/Python310/python -c \"import subprocess,os,sys; sys.stdout.reconfigure\\(encoding='utf-8'\\); env=os.environ.copy\\(\\); env['PATH']=r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64;'+env['PATH']; r=subprocess.run\\([r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64\\\\npx.cmd','vite','build'],cwd=r'd:\\\\lihao\\\\cultural_travel\\\\frontend',capture_output=True,text=True,env=env,shell=True,encoding='utf-8',errors='replace'\\); print\\(r.stdout[-300:]\\); print\\('RC:', r.returncode\\)\")",
+      "Bash(\"rm -f d:/lihao/cultural_travel/frontend/build.py d:/lihao/cultural_travel/frontend/add_map_css.py 2>/dev/null; echo done\")",
+      "Bash(\"grep -n -A5 TravelJournalPdf d:/lihao/cultural_travel/frontend/src/views/CulturalTravelView.vue\", \"description\": \"Find TravelJournalPdf in template\"})",
+      "Bash(/d/lihao/Programs/Python310/python -c \"lines=open\\('d:/lihao/cultural_travel/frontend/src/views/CulturalTravelView.vue','r',encoding='utf-8'\\).readlines\\(\\); [print\\(f'{i+1}: {l}', end=''\\) for i,l in enumerate\\(lines\\) if 'TravelJournalPdf' in l or \\(i>680 and i<705\\)]\")",
+      "Bash(\"/d/lihao/Programs/Python310/python -c \\\\\"lines=open\\('d:/lihao/cultural_travel/frontend/src/views/CulturalTravelView.vue','r',encoding='utf-8'\\).readlines\\(\\); [print\\(f'{i+1}: {l}', end=''\\) for i,l in enumerate\\(lines[699:710]\\)]\\\\\"\", \"dangerouslyDisableSandbox\": true})",
+      "Bash(\"/d/lihao/Programs/Python310/python -c \\\\\"import subprocess,os,sys; sys.stdout.reconfigure\\(encoding='utf-8'\\); env=os.environ.copy\\(\\); env['PATH']=r'D:\\\\\\\\lihao\\\\\\\\Programs\\\\\\\\node-v20.3.1-win-x64;'+env['PATH']; r=subprocess.run\\([r'D:\\\\\\\\lihao\\\\\\\\Programs\\\\\\\\node-v20.3.1-win-x64\\\\\\\\npx.cmd','vite','build'],cwd=r'd:\\\\\\\\lihao\\\\\\\\cultural_travel\\\\\\\\frontend',capture_output=True,text=True,env=env,shell=True,encoding='utf-8',errors='replace'\\); print\\(r.stdout[-200:]\\); print\\('RC:', r.returncode\\)\\\\\"\", \"dangerouslyDisableSandbox\": true, \"description\": \"Build verify with real map image approach\"})",
+      "Bash(\"sed -n '30,50p' d:/lihao/cultural_travel/frontend/src/views/CulturalTravelView.vue\", \"description\": \"Check current state of export logic\")",
+      "Bash(\"sed -n 30,55p d:/lihao/cultural_travel/frontend/src/views/CulturalTravelView.vue\")",
+      "Bash(\"grep -n mapImage d:/lihao/cultural_travel/frontend/src/components/TravelJournalPdf.vue\")",
+      "Bash(/d/lihao/Programs/Python310/python -c \"import subprocess,os,sys; sys.stdout.reconfigure\\(encoding='utf-8'\\); env=os.environ.copy\\(\\); env['PATH']=r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64;'+env['PATH']; r=subprocess.run\\([r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64\\\\npx.cmd','vite','build'],cwd=r'd:\\\\lihao\\\\cultural_travel\\\\frontend',capture_output=True,text=True,env=env,shell=True,encoding='utf-8',errors='replace'\\); print\\(r.stdout[-250:]\\); print\\('RC:', r.returncode\\)\")",
+      "Bash(/d/lihao/Programs/Python310/python d:/lihao/cultural_travel/fix_map.py)"
+    ],
+    "additionalDirectories": [
+      "\\\"d:\\lihao\\cultural_travel\\frontend\\_build.py"
     ]
   }
 }
