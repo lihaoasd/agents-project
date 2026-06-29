@@ -87,7 +87,9 @@
       "Bash(\"sed -n 30,55p d:/lihao/cultural_travel/frontend/src/views/CulturalTravelView.vue\")",
       "Bash(\"grep -n mapImage d:/lihao/cultural_travel/frontend/src/components/TravelJournalPdf.vue\")",
       "Bash(/d/lihao/Programs/Python310/python -c \"import subprocess,os,sys; sys.stdout.reconfigure\\(encoding='utf-8'\\); env=os.environ.copy\\(\\); env['PATH']=r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64;'+env['PATH']; r=subprocess.run\\([r'D:\\\\lihao\\\\Programs\\\\node-v20.3.1-win-x64\\\\npx.cmd','vite','build'],cwd=r'd:\\\\lihao\\\\cultural_travel\\\\frontend',capture_output=True,text=True,env=env,shell=True,encoding='utf-8',errors='replace'\\); print\\(r.stdout[-250:]\\); print\\('RC:', r.returncode\\)\")",
-      "Bash(/d/lihao/Programs/Python310/python d:/lihao/cultural_travel/fix_map.py)"
+      "Bash(/d/lihao/Programs/Python310/python d:/lihao/cultural_travel/fix_map.py)",
+      "Bash(git -C d:/lihao/cultural_travel show HEAD:.env.example)",
+      "Bash(git -C d:/lihao/cultural_travel show HEAD:.env)"
     ],
     "additionalDirectories": [
       "\\\"d:\\lihao\\cultural_travel\\frontend\\_build.py"

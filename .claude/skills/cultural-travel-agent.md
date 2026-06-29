@@ -125,14 +125,6 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
      - 景点详情区，展示基本信息、历史文化介绍、图片浏览。
      - 高德地图路线区，展示景点之间的规划路线。
      - 内容推荐区，展示相关书籍、短视频、文章。
-   - 后端 API：
-     - `POST /api/travel-plan`：根据用户旅游要求推荐省份地市、景点、路线和内容。
-     - `GET /api/cities`：可返回候选省份地市列表。
-     - `GET /api/scenic-spots`：根据地市或需求推荐旅游景点。
-     - `GET /api/scenic-spots/{spot_id}/detail`：获取景点基本信息和历史文化介绍。
-     - `GET /api/scenic-spots/{spot_id}/images`：获取景点图片。
-     - `GET /api/routes`：通过高德地图生成规划路线。
-     - `GET /api/recommendations`：推荐相关书籍、短视频、文章。
    - Agent 逻辑：
      - 默认基于大模型 + MCP 编排结果：由 Agent 调用推荐、检索、地图、内容生成等 MCP 工具。
      - 不要要求设置系统环境变量；模型 Key、MCP Server 配置、高德地图 Key 等通过项目内 `.env` 或显式配置文件读取。
@@ -168,12 +160,6 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
      D:/lihao/Programs/node-v20.3.1-win-x64/npm.cmd install
      D:/lihao/Programs/node-v20.3.1-win-x64/npm.cmd run dev
      ```
-   - 测试 API：
-     ```bash
-     curl -X POST http://127.0.0.1:8000/api/travel-plan \
-       -H "Content-Type: application/json" \
-       -d "{\"requirement\":\"想带孩子了解唐代文化，3天，预算中等\",\"days\":3,\"budget\":\"中等\",\"interests\":[\"历史\",\"文化\",\"美食\"],\"language\":\"zh-CN\"}"
-     ```
    - 前端验证：
      - 打开 Vite 输出的本地地址。
      - 输入旅游要求。
@@ -187,15 +173,3 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 - 涉及 API Key、账号、地图密钥时，提醒用户不要提交到仓库。
 - 如果用户要求“写完整项目”，直接生成文件结构、代码和运行说明。
 - 如果用户要求“只写 skill”，只输出或创建 skill 文档，不要额外生成项目代码。
-
-## 可复用功能清单
-
-后续迭代可加入：
-
-- 目的地知识库：城市、景点、博物馆、非遗、节庆。
-- 多语言讲解：中文、英文、日文、韩文等。
-- 文化礼仪提醒：宗教场所、拍照禁忌、餐桌礼仪。
-- 行程收藏与导出：JSON、Markdown、PDF。
-- 路线收藏、分享和离线查看。
-- 知识库增强：通过 MCP 知识库/文档检索工具生成更准确的讲解。
-- 语音导览：TTS 朗读景点介绍。
