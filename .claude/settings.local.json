@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git -C /d/lihao/cultural_travel rev-parse --show-toplevel)",
-      "Bash(git -C /d/lihao/cultural_travel status --short)",
-      "Bash(git -C /d/lihao/cultural_travel branch --show-current)"
-    ]
-  }
-}
