@@ -225,6 +225,12 @@ class RoutePlanService:
     ) -> dict[str, Any]:
         """使用 MCP Agent（LangGraph + 高德 MCP 工具）规划路线。"""
         logger.debug("_plan_with_mcp_agent 开始约束=%s", constraints)
+
+        # 对起终点做地理编码，确保 lng/lat 不为 null（与 _plan_with_amap 对齐）
+        service = self.amap_service or AmapService()
+        origin = await self._geocode_point(service, origin, destination_city)
+        destination = await self._geocode_point(service, destination, destination_city)
+
         agent = RoutePlanAgent()
         try:
             agent_result = await agent.run(
@@ -262,8 +268,19 @@ class RoutePlanService:
         result.setdefault("navUrl", "")
         result.setdefault("notices", [])
 
+        # 从 segments 累加总距离和总时间（不依赖 LLM 输出），用于前端计算
+        segments = result.get("segments", [])
+        result["totalDistanceMeters"] = sum(
+            int(seg.get("distanceMeters", seg.get("distance", 0)) or 0)
+            for seg in segments
+        )
+        result["totalDurationSeconds"] = sum(
+            int(seg.get("durationSeconds", seg.get("duration", 0)) or 0)
+            for seg in segments
+        )
+
         # 补充 segments 中每条路段的距离/耗时格式化
-        result["segments"] = self._ensure_segment_units(result.get("segments", []))
+        result["segments"] = self._ensure_segment_units(segments)
 
         # 确保 orderedSpots 格式兼容
         result["orderedSpots"] = self._ensure_lng_lat_present(
@@ -322,6 +339,8 @@ class RoutePlanService:
             "origin": origin,
             "destinationPoint": destination,
             "orderedSpots": self._ensure_lng_lat_present([self._spot_to_dict(spot) for spot in ordered_spots]),
+            "totalDistanceMeters": total_distance,
+            "totalDurationSeconds": total_duration,
             "totalDistance": self._format_distance(total_distance),
             "totalDuration": self._format_duration(total_duration),
             "segments": segments,

@@ -19,7 +19,11 @@
       "Bash(\"cd d:/lihao/cultural_travel/backend && sed -n '342,354p' trip_plan/agent/route_plan_agent.py\")",
       "Bash(python -c \"from trip_plan.agent.route_plan_agent import _repair_common_json_issues; print\\('import ok'\\)\")",
       "Bash(python -c \"with open\\('trip_plan/agent/route_plan_agent.py', 'rb'\\) as f: data = f.read\\(\\); idx = data.find\\(b'_repair_common'\\); tail = data[idx:idx+600]; print\\(tail.decode\\('utf-8', errors='replace'\\)\\)\")",
-      "Bash(python _test_json_parse.py)"
+      "Bash(python _test_json_parse.py)",
+      "Bash(\"cd d:/lihao/cultural_travel/backend && python -c \\\\\"import py_compile; py_compile.compile\\('trip_plan/service/route_plan_service.py', doraise=True\\); print\\('compile OK'\\)\\\\\"\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('trip_plan/service/route_plan_service.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(\"cd d:/lihao/cultural_travel/frontend/src/views && python -c \\\\\"\\\\npath = 'CulturalTravelView.vue'\\\\nwith open\\(path, 'r', encoding='utf-8'\\) as f:\\\\n    content = f.read\\(\\)\\\\n\\\\n# 找到 generateCultureIntros 中的 generatedRoute.value = null（最后面的一次）\\\\n# 在 generateCultureIntros 函数范围内（loadingStep = 'culture' 之后）\\\\nold = '''loadingStep.value = 'culture'\\\\n  generatedCultures.value = []\\\\n  generatedRoute.value = null\\\\n  generatedResources.value = null\\\\n  routePlanning.value = false\\\\n  routeError.value = ''''\\\\n\\\\nnew = '''loadingStep.value = 'culture'\\\\n  generatedCultures.value = []\\\\n  generatedResources.value = null\\\\n  routePlanning.value = false\\\\n  routeError.value = ''''\\\\n\\\\nif old in content:\\\\n    content = content.replace\\(old, new, 1\\)\\\\n    with open\\(path, 'w', encoding='utf-8'\\) as f:\\\\n        f.write\\(content\\)\\\\n    print\\('Replaced OK'\\)\\\\nelse:\\\\n    print\\('NOT FOUND - searching for partial match...'\\)\\\\n    for i, line in enumerate\\(content.splitlines\\(\\)\\):\\\\n        if 'loadingStep.value' in line and 'culture' in line:\\\\n            print\\(f'Line {i+1}: {repr\\(line\\)}'\\)\\\\n\\\\\"\"})",
+      "Bash(python _fix_GenCultureIntros.py)"
     ]
   }
 }

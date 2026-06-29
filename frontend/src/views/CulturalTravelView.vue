@@ -92,6 +92,50 @@ const mapLinePoints = computed(() => {
   return routeMapPoints.value.map((point) => `${point.x},${point.y}`).join(' ')
 })
 
+// ---------- 路线总计 —— 从 segments 累加 distanceMeters / durationSeconds，不依赖 LLM 输出 ----------
+
+const routeTotalDistance = computed(() => {
+  const segs = generatedRoute.value?.segments || generatedRoute.value?.legs || []
+  if (!segs.length) return generatedRoute.value?.totalDistance || ''
+  const totalM = segs.reduce((sum, s) => sum + (Number(s.distanceMeters) || Number(s.distance) || 0), 0)
+  if (totalM <= 0) return generatedRoute.value?.totalDistance || ''
+  if (totalM < 1000) return `约 ${totalM} 米`
+  return `约 ${(totalM / 1000).toFixed(1)} 公里`
+})
+
+const routeTotalDuration = computed(() => {
+  const segs = generatedRoute.value?.segments || generatedRoute.value?.legs || []
+  if (!segs.length) return generatedRoute.value?.totalDuration || ''
+  const totalS = segs.reduce((sum, s) => sum + (Number(s.durationSeconds) || Number(s.duration) || 0), 0)
+  if (totalS <= 0) return generatedRoute.value?.totalDuration || ''
+  const h = Math.floor(totalS / 3600)
+  const m = Math.floor((totalS % 3600) / 60)
+  if (h && m) return `约 ${h} 小时 ${m} 分钟`
+  if (h) return `约 ${h} 小时`
+  return `约 ${m} 分钟`
+})
+
+// 单段距离格式化
+function formatSegmentDistance(leg) {
+  const meters = Number(leg.distanceMeters) || Number(leg.distance) || 0
+  if (meters <= 0) return leg.distance || leg.distanceMeters || ''
+  if (meters < 1000) return `约 ${meters} 米`
+  return `约 ${(meters / 1000).toFixed(1)} 公里`
+}
+
+// 单段耗时格式化
+function formatSegmentDuration(leg) {
+  const seconds = Number(leg.durationSeconds) || Number(leg.duration) || 0
+  if (seconds <= 0) return leg.duration || leg.durationSeconds || ''
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h && m) return `约 ${h} 小时 ${m} 分钟`
+  if (h) return `约 ${h} 小时`
+  return `约 ${m} 分钟`
+}
+
+// -----------------------------------------------------------------------------------------------
+
 async function recommendCities() {
   resetAfterCity()
   const text = requirement.value.trim()
@@ -118,7 +162,6 @@ function resetAfterCity() {
   selectedSpot.value = null
   generatedSpots.value = []
   generatedCultures.value = []
-  generatedRoute.value = null
   generatedResources.value = null
   routeMode.value = 'auto'
   routePace.value = 'balanced'
@@ -179,7 +222,6 @@ async function generateCultureIntros() {
   if (!generatedSpots.value.length || !selectedDestination.value) return
   loadingStep.value = 'culture'
   generatedCultures.value = []
-  generatedRoute.value = null
   generatedResources.value = null
   routePlanning.value = false
   routeError.value = ''
@@ -575,18 +617,18 @@ function placeholderClass(stepKey) {
           :destination="generatedRoute.destinationPoint || generatedRoute.origin || null"
           :mode="generatedRoute.mode || 'auto'"
           :nav-url="generatedRoute.navUrl || ''"
-          :total-distance="generatedRoute.totalDistance || ''"
-          :total-duration="generatedRoute.totalDuration || ''"
+          :total-distance="routeTotalDistance"
+          :total-duration="routeTotalDuration"
         />
 
         <aside class="route-summary">
           <div class="summary-card">
             <span>总距离</span>
-            <strong>{{ generatedRoute.totalDistance }}</strong>
+            <strong>{{ routeTotalDistance }}</strong>
           </div>
           <div class="summary-card">
             <span>预计用时</span>
-            <strong>{{ generatedRoute.totalDuration }}</strong>
+            <strong>{{ routeTotalDuration }}</strong>
           </div>
           <p>{{ generatedRoute.description || generatedRoute.notices?.[0] }}</p>
           <p v-if="generatedRoute.fallback" class="warning">当前为备用路线</p>
@@ -598,7 +640,7 @@ function placeholderClass(stepKey) {
           <div class="route-step-index">{{ index + 1 }}</div>
           <div>
             <h3>{{ leg.from }} → {{ leg.to }}</h3>
-            <p>{{ leg.distance || leg.distanceMeters }} · {{ leg.duration || leg.durationSeconds }}</p>
+            <p>{{ formatSegmentDistance(leg) }} · {{ formatSegmentDuration(leg) }}</p>
             <span>{{ leg.detail || leg.tip }}</span>
           </div>
         </article>

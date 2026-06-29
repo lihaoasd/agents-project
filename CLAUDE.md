@@ -62,4 +62,27 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## 5. 项目专用规则
+
+**环境配置**
+
+- 密钥通过 `.env` 文件和环境变量注入，**不能硬编码**
+- `backend/.env` 已被 `.gitignore` 忽略，真实密钥不可提交
+- 配置命名规范：后端 `AMAP_*`、`LLM_*` 前缀，前端 `VITE_*` 前缀
+- 新增密钥必须同步更新 `.env.example`（不含真实值）
+
+**Prompt 模板**
+
+- 所有 Agent prompt 存储在 `trip_plan/prompts/` 目录，**不在代码中内联大段文本**
+- 使用 `load_prompt(name, lang="zh")` 加载，不要手工 `open().read()`
+- 新增 prompt 常量注册到 `trip_plan/prompts/config/prompt.py`
+
+**路线规划**
+
+- 路线规划使用三级降级：MCP Agent → 高德 Web API → 静态路线兜底
+- 总距离/总时间**由前端根据 segments 累加计算**，不依赖 LLM 输出
+- 前端格式化函数统一放在 `<script setup>` 中的 computed / function
+
+---
+
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
