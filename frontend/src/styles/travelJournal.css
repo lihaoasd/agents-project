@@ -1,0 +1,573 @@
+/* ========== 旅行手帐预览样式 ========== */
+
+.journal-wrapper {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 40px;
+}
+
+.journal-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 16px;
+}
+
+.journal-toolbar button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.journal-btn-download {
+  background: #b8573a;
+  color: #fff;
+}
+
+.journal-btn-download:hover {
+  background: #a04a30;
+}
+
+.journal-btn-close {
+  background: #f0f0f0;
+  color: #555;
+}
+
+.journal-btn-close:hover {
+  background: #ddd;
+}
+
+.journal-container {
+  width: 800px;
+  padding: 32px 40px;
+  background: #faf7f2;
+  color: #3d2b1f;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  box-sizing: border-box;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.journal-container *,
+.journal-container *::before,
+.journal-container *::after {
+  box-sizing: border-box;
+}
+
+/* ===== 封面 ===== */
+
+.journal-cover {
+  text-align: center;
+  padding: 60px 20px 40px;
+  position: relative;
+}
+
+.journal-cover::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 50px;
+  height: 50px;
+  border-top: 2px solid #b8573a;
+  border-left: 2px solid #b8573a;
+  border-radius: 2px 0 0 0;
+}
+
+.journal-cover::after {
+  content: '';
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 50px;
+  height: 50px;
+  border-bottom: 2px solid #b8573a;
+  border-right: 2px solid #b8573a;
+  border-radius: 0 0 2px 0;
+}
+
+.journal-cover .journal-title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #b8573a;
+  margin: 0 0 12px;
+}
+
+.journal-cover .journal-destination {
+  font-size: 20px;
+  font-weight: 600;
+  color: #5c3d2e;
+  margin: 0 0 6px;
+}
+
+.journal-cover .journal-date {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0;
+}
+
+.journal-cover .journal-divider {
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #d4a574, transparent);
+  margin: 20px auto;
+}
+
+.journal-cover .journal-requirement {
+  font-size: 13px;
+  color: #6b5a4e;
+  max-width: 480px;
+  margin: 0 auto;
+  font-style: italic;
+}
+
+/* ===== 通用 Section ===== */
+
+.journal-section {
+  padding-top: 20px;
+}
+
+.journal-section-divider {
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed #dcc8b0;
+  margin: 16px 0;
+}
+
+.journal-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #b8573a;
+  margin: 0 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted #dcc8b0;
+  position: relative;
+}
+
+.journal-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: #b8573a;
+}
+
+.journal-section-subtitle {
+  font-size: 12px;
+  color: #8b7355;
+  margin: 4px 0 14px;
+}
+
+/* ===== 目的地概述 ===== */
+
+.journal-dest-card {
+  background: #ffffff;
+  border: 1px solid #ede4d8;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(100, 70, 40, 0.06);
+}
+
+.journal-dest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.journal-dest-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #3d2b1f;
+}
+
+.journal-dest-score {
+  background: #b8573a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 20px;
+}
+
+.journal-dest-intro {
+  font-size: 13px;
+  color: #5c3d2e;
+  line-height: 1.8;
+  margin: 0 0 10px;
+}
+
+.journal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.journal-tag {
+  display: inline-block;
+  background: #f5ede0;
+  color: #8b5e3c;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid #ede4d8;
+}
+
+/* ===== 景点卡片 ===== */
+
+.journal-spot-card {
+  background: #ffffff;
+  border: 1px solid #ede4d8;
+  border-radius: 8px;
+  padding: 0 0 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(100, 70, 40, 0.06);
+}
+
+.journal-spot-image-wrap {
+  width: 100%;
+  height: 180px;
+  background: #ede4d8;
+  overflow: hidden;
+  position: relative;
+}
+
+.journal-spot-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.journal-spot-body {
+  padding: 14px 18px 0;
+}
+
+.journal-spot-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #3d2b1f;
+  margin: 0 0 4px;
+}
+
+.journal-spot-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: #8b7355;
+  margin-bottom: 8px;
+}
+
+.journal-spot-meta span:first-child {
+  background: #d4a574;
+  color: #fff;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.journal-spot-reason {
+  font-size: 13px;
+  color: #5c3d2e;
+  margin: 0 0 10px;
+  line-height: 1.7;
+}
+
+.journal-spot-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 12px;
+  color: #6b5a4e;
+}
+
+.journal-spot-info-item {
+  display: flex;
+  gap: 4px;
+}
+
+.journal-spot-info-label {
+  color: #8b7355;
+  font-weight: 600;
+}
+
+/* ===== 文化解读 ===== */
+
+.journal-culture-card {
+  background: #ffffff;
+  border: 1px solid #ede4d8;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 6px rgba(100, 70, 40, 0.06);
+}
+
+.journal-culture-spot-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #b8573a;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #ede4d8;
+}
+
+.journal-culture-overview {
+  font-size: 13px;
+  color: #5c3d2e;
+  margin: 0 0 12px;
+  line-height: 1.8;
+  font-weight: 500;
+}
+
+.journal-culture-block {
+  margin-bottom: 8px;
+}
+
+.journal-culture-block-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8b5e3c;
+  margin: 0 0 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.journal-culture-block-title::before {
+  content: '\25C6';
+  font-size: 8px;
+  color: #d4a574;
+}
+
+.journal-culture-block-text {
+  font-size: 12px;
+  color: #5c3d2e;
+  margin: 0;
+  line-height: 1.7;
+  padding-left: 14px;
+}
+
+/* ===== 路线规划 ===== */
+
+.journal-route-summary {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.journal-route-stat {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #ede4d8;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(100, 70, 40, 0.06);
+}
+
+.journal-route-stat-label {
+  font-size: 12px;
+  color: #8b7355;
+  margin-bottom: 4px;
+}
+
+.journal-route-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #b8573a;
+}
+
+.journal-route-desc {
+  font-size: 13px;
+  color: #5c3d2e;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: #fdf8f2;
+  border-left: 3px solid #d4a574;
+  border-radius: 0 6px 6px 0;
+}
+
+.journal-route-fallback {
+  font-size: 12px;
+  color: #c1783a;
+  background: #fef5ec;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.journal-route-spots-title,
+.journal-route-legs-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c3d2e;
+  margin: 14px 0 8px;
+}
+
+.journal-route-spots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.journal-route-spot-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #ede4d8;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #5c3d2e;
+}
+
+.journal-route-spot-index {
+  background: #d4a574;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.journal-route-leg {
+  background: #ffffff;
+  border: 1px solid #ede4d8;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(100, 70, 40, 0.06);
+}
+
+.journal-route-leg-index {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #b8573a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.journal-route-leg-content {
+  flex: 1;
+}
+
+.journal-route-leg-path {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3d2b1f;
+  margin-bottom: 2px;
+}
+
+.journal-route-leg-stats {
+  font-size: 12px;
+  color: #8b7355;
+  margin-bottom: 2px;
+}
+
+.journal-route-leg-tip {
+  font-size: 12px;
+  color: #6b5a4e;
+  font-style: italic;
+}
+
+/* ===== 推荐内容 (保留以备未来使用) ===== */
+
+.journal-resource-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 14px;
+}
+
+.journal-resource-tab-label {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b8573a;
+  background: #fff;
+  border: 1px solid #ede4d8;
+  border-bottom: 3px solid #b8573a;
+}
+
+.journal-resource-tab-label:first-child {
+  border-radius: 8px 0 0 0;
+}
+
+.journal-resource-tab-label:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.journal-resource-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.journal-resource-card {
+  background: #ffffff;
+  border: 1px solid #ede4d8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 6px rgba(100, 70, 40, 0.06);
+}
+
+.journal-resource-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3d2b1f;
+  margin: 0 0 4px;
+}
+
+.journal-resource-card-attr {
+  font-size: 12px;
+  color: #8b7355;
+  margin: 0 0 6px;
+}
+
+.journal-resource-card-reason {
+  font-size: 12px;
+  color: #6b5a4e;
+  margin: 0;
+  line-height: 1.7;
+}

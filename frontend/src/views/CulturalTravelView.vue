@@ -2,10 +2,10 @@
 import { computed, ref } from 'vue'
 import '../styles/culturalTravel.css'
 import AmapRouteMap from '../components/AmapRouteMap.vue'
+import TravelJournalPdf from '../components/TravelJournalPdf.vue'
 import { planRoute, recommendCulturalInterpretations, recommendPlaces, recommendScenicSpots } from '../api/tripPlanApi'
 import {
   getCultureByDestination,
-  getResourcesByDestination,
   getSpotsByDestination,
   progressSteps,
 } from '../data/staticTravelData'
@@ -17,19 +17,31 @@ const generatedSpots = ref([])
 const selectedSpot = ref(null)
 const generatedCultures = ref([])
 const generatedRoute = ref(null)
-const generatedResources = ref(null)
 const routeMode = ref('auto')
 const routePace = ref('balanced')
 const routeOrigin = ref('')
 const routeDestination = ref('')
 const routePlanning = ref(false)
 const routeError = ref('')
-const resourceTab = ref('books')
 const notice = ref('')
 const loadingStep = ref(null)
+const showJournal = ref(false)
+
+// ---------- PDF 导出 ----------
+
+const allStepsComplete = computed(() => !!generatedRoute.value)
+
+function exportJournalPdf() {
+  showJournal.value = true
+}
+
+function closeJournal() {
+  showJournal.value = false
+}
+
+// -----------------------------
 
 const currentStep = computed(() => {
-  if (generatedResources.value) return 'resources'
   if (generatedRoute.value) return 'route'
   if (generatedCultures.value.length) return 'culture'
   if (generatedSpots.value.length) return 'spots'
@@ -162,7 +174,6 @@ function resetAfterCity() {
   selectedSpot.value = null
   generatedSpots.value = []
   generatedCultures.value = []
-  generatedResources.value = null
   routeMode.value = 'auto'
   routePace.value = 'balanced'
   routeOrigin.value = ''
@@ -178,8 +189,7 @@ function selectDestination(destination) {
   generatedSpots.value = []
   generatedCultures.value = []
   generatedRoute.value = null
-  generatedResources.value = null
-  notice.value = '已完成“地方推荐”节点。请选择“生成旅游景点”继续。'
+  notice.value = '已完成"地方推荐"节点。请选择"生成旅游景点"继续。'
 }
 
 async function generateSpots() {
@@ -188,7 +198,6 @@ async function generateSpots() {
   selectedSpot.value = null
   generatedCultures.value = []
   generatedRoute.value = null
-  generatedResources.value = null
   routePlanning.value = false
   routeError.value = ''
   loadingStep.value = 'spots'
@@ -203,7 +212,6 @@ async function generateSpots() {
     selectedSpot.value = generatedSpots.value[0] || null
     generatedCultures.value = []
     generatedRoute.value = null
-    generatedResources.value = null
     notice.value = result.data.notice || `已根据 ${selectedDestination.value.city} 生成 ${generatedSpots.value.length} 个文化旅行景点。`
   } catch (err) {
     generatedSpots.value = getSpotsByDestination(selectedDestination.value.id)
@@ -222,7 +230,6 @@ async function generateCultureIntros() {
   if (!generatedSpots.value.length || !selectedDestination.value) return
   loadingStep.value = 'culture'
   generatedCultures.value = []
-  generatedResources.value = null
   routePlanning.value = false
   routeError.value = ''
   try {
@@ -248,7 +255,6 @@ async function generateRoutePlan() {
   if (!selectedDestination.value || !generatedSpots.value.length) return
   routePlanning.value = true
   routeError.value = ''
-  generatedResources.value = null
   try {
     const result = await planRoute({
       requirement: requirement.value.trim(),
@@ -275,26 +281,6 @@ async function generateRoutePlan() {
   } finally {
     routePlanning.value = false
   }
-}
-
-function generateResources() {
-  if (!selectedDestination.value) return
-  generatedResources.value = getResourcesByDestination(selectedDestination.value.id)
-  resourceTab.value = 'books'
-  notice.value = '已生成相关书籍、短视频和文章推荐。'
-}
-
-function resourceItems(type) {
-  if (!generatedResources.value) return []
-  return generatedResources.value[type] || []
-}
-
-function resourceLabel(type) {
-  return {
-    books: '书籍',
-    videos: '短视频',
-    articles: '文章',
-  }[type] || '推荐'
 }
 
 function markerStyle(point) {
@@ -338,8 +324,8 @@ function placeholderClass(stepKey) {
         <p class="eyebrow">文化旅行 Agent · 静态原型</p>
         <h1>输入旅行需求，生成地方、景点与综合文化解读</h1>
         <p class="hero-desc">
-          项目包含 5 个进度节点：地方推荐、旅游景点生成、综合文化解读、地图路线规划、推荐相关书籍/短视频/文章。
-          当前已实现全部五个节点：需求输入、地市推荐、景点生成、景点综合文化解读、地图路线规划和内容资源推荐。
+          项目包含 4 个进度节点：地方推荐、旅游景点生成、综合文化解读、地图路线规划。
+          当前已实现全部四个节点：需求输入、地市推荐、景点生成、景点综合文化解读和地图路线规划。
         </p>
       </div>
     </header>
@@ -378,7 +364,7 @@ function placeholderClass(stepKey) {
     <section v-if="recommendedCities.length" class="panel">
       <div class="section-title">
         <div>
-          <p class="eyebrow">Progress 01 / 05</p>
+          <p class="eyebrow">Progress 01 / 04</p>
           <h2>地方推荐</h2>
         </div>
         <span class="status">{{ selectedDestination ? '已完成' : '进行中' }}</span>
@@ -459,7 +445,7 @@ function placeholderClass(stepKey) {
     <section v-if="generatedSpots.length" class="panel spots-panel">
       <div class="section-title">
         <div>
-          <p class="eyebrow">Progress 02 / 05</p>
+          <p class="eyebrow">Progress 02 / 04</p>
           <h2>旅游景点生成</h2>
         </div>
         <span class="status">已完成</span>
@@ -561,7 +547,7 @@ function placeholderClass(stepKey) {
     <section v-if="generatedCultures.length" class="panel culture-panel">
       <div class="section-title">
         <div>
-          <p class="eyebrow">Progress 03 / 05</p>
+          <p class="eyebrow">Progress 03 / 04</p>
           <h2>综合文化解读</h2>
         </div>
         <span class="status">已完成</span>
@@ -599,7 +585,7 @@ function placeholderClass(stepKey) {
     <section v-if="generatedRoute" class="panel route-panel">
       <div class="section-title">
         <div>
-          <p class="eyebrow">Progress 04 / 05</p>
+          <p class="eyebrow">Progress 04 / 04</p>
           <h2>地图路线规划</h2>
         </div>
         <span class="status">已完成</span>
@@ -647,46 +633,20 @@ function placeholderClass(stepKey) {
       </div>
 
       <div class="actions culture-actions">
-        <button class="primary" type="button" @click="generateResources">
-          {{ generatedResources ? '重新生成推荐内容' : '推荐相关书籍/短视频/文章' }}
+        <button class="secondary" type="button" :disabled="routePlanning" @click="generateRoutePlan">
+          <span v-if="routePlanning" class="spinner"></span>
+          {{ routePlanning ? '正在调用高德规划路线…' : '重新生成地图路线规划' }}
         </button>
       </div>
-    </section>
 
-    <section v-if="generatedResources" class="panel resources-panel">
-      <div class="section-title">
-        <div>
-          <p class="eyebrow">Progress 05 / 05</p>
-          <h2>推荐相关书籍、短视频、文章</h2>
-        </div>
-        <span class="status">已完成</span>
-      </div>
-
-      <p class="section-desc">
-        以下为根据 {{ selectedDestination.city }} 推荐的文化旅行延伸阅读和观看内容，当前使用静态数据展示。
-      </p>
-
-      <div class="resource-tabs">
+      <div v-if="allStepsComplete" class="actions" style="margin-top: 16px;">
         <button
-          v-for="type in ['books', 'videos', 'articles']"
-          :key="type"
-          class="resource-tab"
-          :class="{ active: resourceTab === type }"
+          class="primary"
           type="button"
-          @click="resourceTab = type"
+          @click="exportJournalPdf"
         >
-          {{ resourceLabel(type) }}
+          导出旅行手帐 PDF
         </button>
-      </div>
-
-      <div class="resource-grid">
-        <article v-for="item in resourceItems(resourceTab)" :key="item.title" class="resource-card">
-          <span class="resource-type">{{ resourceLabel(resourceTab) }}</span>
-          <h3>{{ item.title }}</h3>
-          <p v-if="item.author">作者：{{ item.author }}</p>
-          <p v-if="item.source">来源：{{ item.source }}</p>
-          <p>{{ item.reason }}</p>
-        </article>
       </div>
     </section>
 
@@ -708,10 +668,10 @@ function placeholderClass(stepKey) {
           <strong>{{ step.label }}</strong>
           <p>
             <template v-if="step.key === 'city'">
-              已实现需求输入、静态地市推荐和用户选择。
+              已实现需求输入、地市推荐和用户选择。
             </template>
             <template v-else-if="step.key === 'spots'">
-              已实现根据已选地市生成静态景点列表。
+              已实现根据已选地市生成景点列表。
             </template>
             <template v-else-if="step.key === 'culture'">
               已实现景点历史、风俗、地理等综合文化解读和景点切换查看。
@@ -719,15 +679,19 @@ function placeholderClass(stepKey) {
             <template v-else-if="step.key === 'route'">
               已实现基于推荐目的地、景点位置和高德 API 的路线规划。
             </template>
-            <template v-else-if="step.key === 'resources'">
-              已实现相关书籍、短视频和文章推荐。
-            </template>
-            <template v-else>
-              后续基于已选地市和景点生成对应内容。
-            </template>
           </p>
         </div>
       </div>
     </section>
+
+    <TravelJournalPdf
+      v-if="showJournal"
+      :destination="selectedDestination"
+      :spots="generatedSpots"
+      :cultures="generatedCultures"
+      :route="generatedRoute"
+      :requirement="requirement"
+      @close="closeJournal"
+    />
   </main>
 </template>

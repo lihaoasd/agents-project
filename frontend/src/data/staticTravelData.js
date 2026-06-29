@@ -3,7 +3,6 @@ export const progressSteps = [
   { key: 'spots', label: '旅游景点生成' },
   { key: 'culture', label: '综合文化解读' },
   { key: 'route', label: '地图路线规划' },
-  { key: 'resources', label: '书籍/短视频/文章' },
 ]
 
 export const destinationData = [
