@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import AppConfig
 from logging_config import get_logger, setup_logging
+from debate.api import router as debate_router
 from trip_plan.api import router as trip_plan_router
 
 setup_logging()
@@ -37,6 +38,7 @@ app.add_middleware(
 
 app.state.app_config = app_config
 app.include_router(trip_plan_router)
+app.include_router(debate_router)
 
 
 @app.get("/")

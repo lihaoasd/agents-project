@@ -81,6 +81,8 @@ D:\lihao\Programs\node-v20.3.1-win-x64\node_global
 
 ```bash
 cd frontend
+$env:PATH = "D:/lihao/Programs/node-v20.3.1-win-x64;$env:PATH"
+$env:PATH = "D:/lihao/Programs/node-v20.3.1-win-x64/node_global;$env:PATH"
 D:/lihao/Programs/node-v20.3.1-win-x64/npm.cmd install
 D:/lihao/Programs/node-v20.3.1-win-x64/npm.cmd run dev
 ```
