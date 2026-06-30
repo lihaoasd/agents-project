@@ -1,0 +1,9 @@
+[
+  {
+    "id": "neutral_analyst",
+    "name": "中立分析者",
+    "description": "不持任何流派立场的中立裁判，负责主持流程、识别核心分歧、分配质询、投票评判、撰写总结。",
+    "style": "现代分析语言，清晰精准不偏袒",
+    "file": "neutral_analyst.md"
+  }
+]
