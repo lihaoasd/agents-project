@@ -177,22 +177,28 @@ class DebateAgent(BaseAgent):
     # ---- 上下文构建工具 -------------------------------------------------------
 
     @staticmethod
-    def format_transcript(messages: list[dict[str, Any]]) -> str:
+    def format_transcript(messages: list[dict[str, Any]] | list[Any]) -> str:
         """将消息列表格式化为大模型可读的辩论记录文本。
 
         Args:
-            messages: 消息 dict 列表，每条含 speaker_name, speaker_role,
-                      target_name, phase, content 字段
+            messages: Message 对象列表或 dict 列表
 
         Returns:
             格式化的全文记录
         """
         lines: list[str] = []
         for msg in messages:
-            speaker = msg.get("speaker_name", "未知")
-            role = msg.get("speaker_role", "debater")
-            target = msg.get("target_name", "")
-            content = msg.get("content", "")
+            # 兼容 Pydantic Message 对象和 dict
+            if isinstance(msg, dict):
+                speaker = msg.get("speaker_name", "未知")
+                role = msg.get("speaker_role", "debater")
+                target = msg.get("target_name", "")
+                content = msg.get("content", "")
+            else:
+                speaker = getattr(msg, "speaker_name", "未知")
+                role = getattr(msg, "speaker_role", "debater")
+                target = getattr(msg, "target_name", "")
+                content = getattr(msg, "content", "")
 
             prefix = f"[{speaker}（{role}）]"
             if target and target != "all":
