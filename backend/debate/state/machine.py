@@ -206,9 +206,92 @@ def get_next_phase(phase: DebatePhase) -> DebatePhase | None:
     return None
 
 
+# ============================================================
+# 阶段辅助查询函数
+# ============================================================
+
+
+def is_parallel(phase: DebatePhase) -> bool:
+    """该阶段内部是否并行执行所有发言者。
+
+    并行阶段：立论、结辩、投票（所有辩者同时发言/投票）
+    串行阶段：质询问答（逐对进行）、裁判统计+总结
+    """
+    return phase in (
+        DebatePhase.OPENING,
+        DebatePhase.CLOSING,
+        DebatePhase.VOTING,
+    )
+
+
+def speakers_for(phase: DebatePhase, debater_ids: list[str], judge_id: str = "") -> list[str]:
+    """返回指定阶段需要发言的参与者 ID 列表。
+
+    Args:
+        phase: 辩论阶段
+        debater_ids: 所有辩者 ID 列表
+        judge_id: 裁判 ID（仅在裁判阶段使用）
+
+    Returns:
+        该阶段需要发言的角色 ID 列表
+    """
+    if phase in (DebatePhase.OPENING, DebatePhase.CLOSING, DebatePhase.VOTING):
+        # 所有辩者并行
+        return list(debater_ids)
+    elif phase == DebatePhase.CROSS_ASK:
+        # 质询提问：所有辩者都是提问者
+        return list(debater_ids)
+    elif phase == DebatePhase.CROSS_ANSWER:
+        # 质询回答：所有辩者都可能被质询
+        return list(debater_ids)
+    elif phase in (DebatePhase.JUDGE_TALLY, DebatePhase.JUDGE_SUMMARY):
+        # 裁判阶段
+        return [judge_id] if judge_id else []
+    else:
+        return []
+
+
+def target_for(
+    phase: DebatePhase,
+    speaker_id: str,
+    debater_ids: list[str],
+    cross_pair: str | None = None,
+) -> str:
+    """返回发言者的消息目标 ID。
+
+    Args:
+        phase: 辩论阶段
+        speaker_id: 发言者 ID
+        debater_ids: 所有辩者 ID 列表
+        cross_pair: CROSS_ANSWER 阶段中，当前提问者的 ID（用于确定回复目标）
+
+    Returns:
+        目标 ID（'all' 表示所有人，或特定辩者 ID）
+    """
+    if phase in (DebatePhase.OPENING, DebatePhase.CLOSING):
+        # 立论和结辩面向所有人
+        return "all"
+    elif phase == DebatePhase.CROSS_ASK:
+        # 质询提问：目标是特定辩者（由调用方指定）
+        return "all"  # 具体 target 由调用方通过 cross_pair 参数处理
+    elif phase == DebatePhase.CROSS_ANSWER:
+        # 质询回答：目标是指定的提问者
+        return cross_pair if cross_pair else "all"
+    elif phase == DebatePhase.VOTING:
+        # 投票阶段：目标是其他辩者（由 LLM 选择）
+        return "all"
+    elif phase in (DebatePhase.JUDGE_TALLY, DebatePhase.JUDGE_SUMMARY):
+        return "all"
+    else:
+        return "all"
+
+
 __all__ = [
     "DebateState",
     "PhaseResult",
     "get_phase_order",
     "get_next_phase",
+    "is_parallel",
+    "speakers_for",
+    "target_for",
 ]
