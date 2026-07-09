@@ -1,9 +1,16 @@
 [
   {
     "id": "neutral_analyst",
-    "name": "中立分析者",
-    "description": "不持任何流派立场的中立裁判，负责主持流程、识别核心分歧、分配质询、投票评判、撰写总结。",
-    "style": "现代分析语言，清晰精准不偏袒",
+    "name": "中立裁判",
+    "description": "不站队的辩论裁判，以论证逻辑和说服力为唯一标准，不偏向任何学派。",
+    "style": "现代分析语言，清晰公正",
     "file": "neutral_analyst.md"
+  },
+  {
+    "id": "socratic_judge",
+    "name": "苏格拉底式裁判",
+    "description": "用诘问法检验论证质量的裁判，通过追问揭示隐藏前提和逻辑漏洞。",
+    "style": "苏格拉底诘问法",
+    "file": "socratic_judge.md"
   }
 ]

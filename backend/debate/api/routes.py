@@ -11,8 +11,8 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
+import random
 import uuid
 from collections.abc import AsyncIterator
 from datetime import datetime
@@ -165,54 +165,49 @@ def _store_message(
     _service._store.add_message(session_id, msg)
 
 
-async def _stream_parallel_speakers(
+async def _stream_sequential_speakers(
     session_id: str,
     phase: DebatePhase,
     speakers: list[Any],
     build_context: Any,
     stage: str,
 ) -> AsyncIterator[str]:
-    """并行流式输出多个发言者。
+    """顺序流式输出多个发言者 —— 一位发言完毕再轮到下一位。"""
 
-    使用 asyncio.Queue 实现真正的并行：
-    所有发言者同时调用 LLM，token 到达顺序即为推送顺序。
-    """
-    queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
-
-    async def stream_one(speaker: Any) -> str:
+    for speaker in speakers:
         agent = DebateService._make_debater_agent(speaker.id)
         user_content = build_context(speaker)
         task_prompt = agent.load_task_prompt(stage)
 
-        await queue.put(
+        yield _sse_line(
+            "speaker_start",
             {
-                "type": "speaker_start",
                 "speaker_id": speaker.id,
                 "speaker_name": speaker.name,
                 "phase": phase.value,
-            }
+            },
         )
 
         tokens: list[str] = []
         try:
             async for token in agent.invoke_stream(user_content, task_prompt):
                 tokens.append(token)
-                await queue.put(
+                yield _sse_line(
+                    "message_delta",
                     {
-                        "type": "token",
                         "speaker_id": speaker.id,
                         "speaker_name": speaker.name,
                         "phase": phase.value,
                         "token": token,
-                    }
+                    },
                 )
         except Exception as exc:
-            await queue.put(
+            yield _sse_line(
+                "error",
                 {
-                    "type": "error",
                     "speaker_id": speaker.id,
                     "message": str(exc),
-                }
+                },
             )
 
         content = "".join(tokens)
@@ -224,33 +219,15 @@ async def _stream_parallel_speakers(
             content=content,
         )
 
-        await queue.put(
+        yield _sse_line(
+            "speaker_end",
             {
-                "type": "speaker_end",
                 "speaker_id": speaker.id,
                 "speaker_name": speaker.name,
+                "phase": phase.value,
                 "full_content": content,
-            }
+            },
         )
-        return content
-
-    tasks = [asyncio.create_task(stream_one(s)) for s in speakers]
-    completed = 0
-
-    while completed < len(speakers):
-        item = await queue.get()
-        event_type = item.pop("type")
-        if event_type == "token":
-            yield _sse_line("message_delta", item)
-        elif event_type == "speaker_start":
-            yield _sse_line("speaker_start", item)
-        elif event_type == "speaker_end":
-            completed += 1
-            yield _sse_line("speaker_end", item)
-        elif event_type == "error":
-            yield _sse_line("error", item)
-
-    await asyncio.gather(*tasks, return_exceptions=True)
 
 
 async def _replay_all_messages(session: Any) -> AsyncIterator[str]:
@@ -388,7 +365,7 @@ async def _stream_full_debate(
     # ============================================================
     _service._store.update_phase(session_id, "opening", 0)
     yield _sse_line("phase_start", {"phase": "opening", "label": "立论陈词"})
-    async for line in _stream_parallel_speakers(
+    async for line in _stream_sequential_speakers(
         session_id=session_id,
         phase=DebatePhase.OPENING,
         speakers=debaters,
@@ -396,9 +373,9 @@ async def _stream_full_debate(
         stage="opening",
     ):
         yield line
-    _service._store.update_phase(session_id, "cross_examination", round_num=0)
+    _service._store.update_phase(session_id, "cross_ask", round_num=0)
     yield _sse_line("phase_complete", {"phase": "opening"})
-    print("openings")
+
     # ============================================================
     # Phase 2-3: Cross-Examination — 逐对质询
     # ============================================================
@@ -406,16 +383,43 @@ async def _stream_full_debate(
     for msg in _service.get_session(session_id).messages:
         if msg.phase == DebatePhase.OPENING:
             openings[msg.speaker_id] = msg.content
-    print(openings)
+
+    # 让每个辩者通过 LLM 选出 2 个质询目标
+    class _SelectTargets(BaseModel):
+        target_ids: list[str] = Field(..., min_length=2, max_length=2)
+
     pairs: list[tuple[Any, Any]] = []
     for asker in debaters:
-        for answerer in debaters:
-            if asker.id != answerer.id:
-                pairs.append((asker, answerer))
+        candidates = [d for d in debaters if d.id != asker.id]
+        if len(candidates) <= 2:
+            # 对手不够 2 个时全选
+            for c in candidates:
+                pairs.append((asker, c))
+            continue
+
+        select_agent = DebateService._make_debater_agent(asker.id)
+        select_ctx = DebateAgent.build_cross_select_targets_context(
+            question=question,
+            openings=openings,
+            asker_name=asker.name,
+            candidate_names=[c.name for c in candidates],
+        )
+        try:
+            selected = select_agent.invoke_structured(
+                select_ctx, _SelectTargets, select_agent.load_task_prompt("cross_select_targets")
+            )
+            for tid in selected.target_ids:
+                target = next((c for c in candidates if c.id == tid), None)
+                if target:
+                    pairs.append((asker, target))
+        except Exception:
+            # 降级：随机选 2 个
+            for c in random.sample(candidates, 2):
+                pairs.append((asker, c))
 
     for round_num in range(1, total_rounds + 1):
         _service._store.update_phase(
-            session_id, "cross_examination", round_num=round_num
+            session_id, "cross_ask", round_num=round_num
         )
         yield _sse_line(
             "phase_start",
@@ -429,7 +433,7 @@ async def _stream_full_debate(
         for asker, answerer in pairs:
             # Cross Ask
             ask_agent = DebateService._make_debater_agent(asker.id)
-            ask_context = DebateAgent.build_cross_ask_context(question, openings)
+            ask_context = DebateAgent.build_cross_ask_context(question, openings, answerer.name)
 
             yield _sse_line(
                 "speaker_start",
@@ -578,7 +582,7 @@ async def _stream_full_debate(
             f"轮次{qa.round} | 你答：{a_text}"
         )
 
-    async for line in _stream_parallel_speakers(
+    async for line in _stream_sequential_speakers(
         session_id=session_id,
         phase=DebatePhase.CLOSING,
         speakers=debaters,
@@ -673,6 +677,7 @@ async def _stream_full_debate(
         question=question,
         full_transcript=transcript,
         votes_text=votes_text,
+        debater_id_map={d.name: d.id for d in debaters},
     )
 
     yield _sse_line("judge_tally_start", {})
@@ -694,7 +699,17 @@ async def _stream_full_debate(
             winner_id = max(vote_count, key=lambda k: vote_count[k])
         else:
             winner_id = ""
-        winner_name = next((d.name for d in debaters if d.id == winner_id), "未知")
+        # LLM 可能输出名称而非 ID，先按 ID 匹配，再按名称匹配
+        match = next((d for d in debaters if d.id == winner_id), None)
+        if match is None:
+            match = next((d for d in debaters if d.name == winner_id), None)
+        if match is None and winner_name:
+            match = next((d for d in debaters if d.name == winner_name), None)
+        if match:
+            winner_id = match.id
+            winner_name = match.name
+        else:
+            winner_name = winner_name or "未知"
         scores_summary = {}
 
     latest = _service.get_session(session_id)

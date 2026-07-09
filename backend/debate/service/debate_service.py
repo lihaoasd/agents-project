@@ -379,12 +379,38 @@ class DebateService:
             if msg.phase == DebatePhase.OPENING:
                 openings[msg.speaker_id] = msg.content
 
-        # 生成所有 Q&A 配对
+        # 每个辩者通过 LLM 选出 2 个质询目标
+        class _SelectTargets(BaseModel):
+            target_ids: list[str] = Field(..., min_length=2, max_length=2)
+
         pairs: list[tuple[DebaterRole, DebaterRole]] = []
         for asker in debaters:
-            for answerer in debaters:
-                if asker.id != answerer.id:
-                    pairs.append((asker, answerer))
+            candidates = [d for d in debaters if d.id != asker.id]
+            if len(candidates) <= 2:
+                for c in candidates:
+                    pairs.append((asker, c))
+                continue
+
+            select_agent = self._make_debater_agent(asker.id)
+            select_ctx = DebateAgent.build_cross_select_targets_context(
+                question=session.config.question,
+                openings=openings,
+                asker_name=asker.name,
+                candidate_names=[c.name for c in candidates],
+            )
+            try:
+                selected = select_agent.invoke_structured(
+                    select_ctx, _SelectTargets,
+                    select_agent.load_task_prompt("cross_select_targets"),
+                )
+                for tid in selected.target_ids:
+                    target = next((c for c in candidates if c.id == tid), None)
+                    if target:
+                        pairs.append((asker, target))
+            except Exception:
+                import random
+                for c in random.sample(candidates, 2):
+                    pairs.append((asker, c))
 
         logger.info(
             "开始第 %s 轮交叉质询 session_id=%s pairs=%s",
@@ -401,7 +427,7 @@ class DebateService:
             ask_agent = self._make_debater_agent(asker.id)
 
             # 构建质询提问上下文：问题 + 所有人的立论
-            ask_context = DebateAgent.build_cross_ask_context(question, openings)
+            ask_context = DebateAgent.build_cross_ask_context(question, openings, answerer.name)
             try:
                 ask_content = ask_agent.invoke_text(ask_context, ask_agent.load_task_prompt("cross_ask"))
             except AgentError as exc:
@@ -492,11 +518,38 @@ class DebateService:
             if msg.phase == DebatePhase.OPENING:
                 openings[msg.speaker_id] = msg.content
 
+        # 每个辩者通过 LLM 选出 2 个质询目标
+        class _SelectTargets(BaseModel):
+            target_ids: list[str] = Field(..., min_length=2, max_length=2)
+
         pairs: list[tuple[DebaterRole, DebaterRole]] = []
         for asker in debaters:
-            for answerer in debaters:
-                if asker.id != answerer.id:
-                    pairs.append((asker, answerer))
+            candidates = [d for d in debaters if d.id != asker.id]
+            if len(candidates) <= 2:
+                for c in candidates:
+                    pairs.append((asker, c))
+                continue
+
+            select_agent2 = self._make_debater_agent(asker.id)
+            select_ctx2 = DebateAgent.build_cross_select_targets_context(
+                question=session.config.question,
+                openings=openings,
+                asker_name=asker.name,
+                candidate_names=[c.name for c in candidates],
+            )
+            try:
+                selected2 = select_agent2.invoke_structured(
+                    select_ctx2, _SelectTargets,
+                    select_agent2.load_task_prompt("cross_select_targets"),
+                )
+                for tid in selected2.target_ids:
+                    target = next((c for c in candidates if c.id == tid), None)
+                    if target:
+                        pairs.append((asker, target))
+            except Exception:
+                import random as _random
+                for c in _random.sample(candidates, 2):
+                    pairs.append((asker, c))
 
         seq = len(session.messages)
 
@@ -517,7 +570,7 @@ class DebateService:
                 },
             }
 
-            ask_context = DebateAgent.build_cross_ask_context(question, openings)
+            ask_context = DebateAgent.build_cross_ask_context(question, openings, answerer.name)
             ask_tokens: list[str] = []
             try:
                 async for token in ask_agent.invoke_stream(
@@ -961,6 +1014,7 @@ class DebateService:
             question=question,
             full_transcript=transcript,
             votes_text=votes_text,
+            debater_id_map={d.name: d.id for d in debaters},
         )
 
         try:
@@ -1070,6 +1124,7 @@ class DebateService:
             question=question,
             full_transcript=transcript,
             votes_text=votes_text,
+            debater_id_map={d.name: d.id for d in debaters},
         )
 
         try:

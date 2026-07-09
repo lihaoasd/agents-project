@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, TypeVar
 
@@ -163,25 +165,58 @@ class BaseAgent(ABC):
         return result
 
     def invoke_structured(self, user_content: str, output_schema: type[T], task_prompt: str | None = None) -> T:
-        """调用大模型并返回 Pydantic 结构化结果。"""
+        """调用大模型并返回 Pydantic 结构化结果。
 
-        messages = self._build_messages(user_content, task_prompt)
+        不走原生 response_format（DeepSeek 等兼容 API 不支持），
+        改用 JSON prompt 指令 + 正则提取 + 校验的方式。
+        """
+        # 构建 schema 描述塞进 prompt
+        fields_desc = []
+        for name, field in output_schema.model_fields.items():
+            fields_desc.append(f'    "{name}": {field.annotation.__name__ if hasattr(field.annotation, "__name__") else str(field.annotation)}  // {field.description or ""}')
+
+        schema_json = json.dumps(
+            {name: f"<{field.annotation.__name__ if hasattr(field.annotation, '__name__') else str(field.annotation)}>" for name, field in output_schema.model_fields.items()},
+            ensure_ascii=False, indent=2,
+        )
+
+        json_instruction = (
+            f'\n\n请严格按以下 JSON 格式回复（不要加 markdown 代码块标记，直接输出纯 JSON）：\n'
+            f'{schema_json}'
+        )
+
+        messages = self._build_messages(user_content + json_instruction, task_prompt)
         _log_llm_input(messages, output_schema)
+
         try:
-            structured_llm = self.llm.with_structured_output(output_schema)
-            result = structured_llm.invoke(messages)
+            raw = self.llm.invoke(messages)
+            content = raw.content if hasattr(raw, "content") else str(raw)
         except Exception as exc:
             _log_llm_error(exc)
             raise AgentError("结构化大模型调用失败") from exc
-        _log_llm_output(result, output_schema)
 
-        if isinstance(result, output_schema):
-            return result
-        if isinstance(result, dict):
-            return output_schema.model_validate(result)
-        if isinstance(result, BaseModel):
-            return output_schema.model_validate(result.model_dump())
-        raise AgentError(f"大模型返回结果类型不受支持：{type(result)}")
+        _log_llm_output(content if isinstance(content, str) else str(content), str)
+
+        text = content if isinstance(content, str) else str(content)
+
+        # 尝试提取 JSON（可能被 ```json 包裹）
+        json_match = re.search(r'```(?:json)?\s*\n?([\s\S]*?)\n?```', text)
+        if json_match:
+            text = json_match.group(1).strip()
+
+        # 尝试找第一个 { 到最后一个 }
+        brace_start = text.find("{")
+        brace_end = text.rfind("}")
+        if brace_start != -1 and brace_end != -1:
+            text = text[brace_start:brace_end + 1]
+
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            _log_llm_error(exc)
+            raise AgentError(f"大模型返回无法解析为 JSON: {text[:200]}") from exc
+
+        return output_schema.model_validate(data)
 
     @abstractmethod
     def run(self, user_content: str, **kwargs: Any) -> Any:

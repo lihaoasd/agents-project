@@ -7,6 +7,7 @@ const route = useRoute()
 const navItems = [
   { name: 'home', label: '首页', icon: '🏠', path: '/' },
   { name: 'cultural-travel', label: '文化旅行', icon: '🏯', path: '/cultural-travel' },
+  { name: 'debate-setup', label: '多Agent辩论', icon: '🎭', path: '/debate' },
 ]
 
 const themes = [
@@ -18,7 +19,15 @@ const themes = [
 
 const currentTheme = ref('simple')
 const themeOpen = ref(false)
-const activeName = computed(() => route.name)
+const activeNav = computed(() => {
+  // 按路径前缀匹配：/debate/xxx 也能高亮 debate 导航
+  return navItems.find(item =>
+    item.path === '/'
+      ? route.path === '/'
+      : route.path.startsWith(item.path)
+  ) ?? null
+})
+const activeRoute = computed(() => activeNav.value?.name ?? null)
 
 onMounted(() => {
   currentTheme.value = localStorage.getItem('cultural-travel-theme') || 'simple'
@@ -39,9 +48,9 @@ function applyTheme(theme, persist = true) {
   <div class="app-shell">
     <aside class="sidebar">
       <RouterLink to="/" class="brand">
-        <span class="brand-mark">文</span>
+        <span class="brand-mark">🤖</span>
         <span>
-          <strong>Cultural Travel</strong>
+          <strong>Multi Agent</strong>
           <small>Agent Project</small>
         </span>
       </RouterLink>
@@ -52,7 +61,7 @@ function applyTheme(theme, persist = true) {
           :key="item.name"
           :to="item.path"
           class="nav-item"
-          :class="{ active: activeName === item.name }"
+          :class="{ active: activeRoute === item.name }"
         >
           <span>{{ item.icon }}</span>
           <strong>{{ item.label }}</strong>
@@ -61,8 +70,8 @@ function applyTheme(theme, persist = true) {
 
       <div class="sidebar-footer">
         <span>当前项目</span>
-        <strong>文化旅行 Agent</strong>
-        <small>后续可扩展更多功能页面</small>
+        <strong>{{ activeNav?.label || 'Agent Project' }}</strong>
+        <small>{{ activeNav?.path === '/' ? '🏠 首页' : activeNav?.icon + ' ' + activeNav?.label }}</small>
       </div>
     </aside>
 

@@ -41,8 +41,8 @@ class LLMConfig(BaseSettings):
     api_key: SecretStr = Field(default_factory=lambda: SecretStr(""))
     base_url: str = Field(default="", validation_alias="LLM_BASE_URL")
     temperature: float = Field(default=0.2, ge=0, le=2, validation_alias="LLM_TEMPERATURE")
-    max_tokens: int = Field(default=2048, gt=0, validation_alias="LLM_MAX_TOKENS")
-    timeout_seconds: int = Field(default=30, gt=0, validation_alias="LLM_TIMEOUT_SECONDS")
+    max_tokens: int = Field(default=4096, gt=0, validation_alias="LLM_MAX_TOKENS")
+    timeout_seconds: int = Field(default=120, gt=0, validation_alias="LLM_TIMEOUT_SECONDS")
 
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None

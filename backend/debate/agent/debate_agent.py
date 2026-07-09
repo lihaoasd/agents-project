@@ -222,13 +222,16 @@ class DebateAgent(BaseAgent):
 
     @staticmethod
     def build_cross_ask_context(
-        question: str, openings: dict[str, str]
+        question: str,
+        openings: dict[str, str],
+        answerer_name: str = "",
     ) -> str:
         """构建质询提问阶段的上下文（仅数据，指令由 stage task prompt 提供）。
 
         Args:
             question: 辩论问题
             openings: {debater_name: opening_text} 所有辩者的立论内容
+            answerer_name: 被质询者的名称（仅需向这一个人提问）
 
         Returns:
             适合传入 invoke_text / invoke_stream 的 user_content
@@ -237,10 +240,46 @@ class DebateAgent(BaseAgent):
         for name, text in openings.items():
             openings_text += f"\n### {name} 的立论\n{text}\n"
 
+        target_line = f"\n本次你只需向 **{answerer_name}** 一人提出 1 个质询问题。" if answerer_name else ""
+
         return f"""辩论问题：「{question}」
 
 以下是所有辩者的立论观点：
-{openings_text}"""
+{openings_text}{target_line}"""
+
+    @staticmethod
+    def build_cross_select_targets_context(
+        question: str,
+        openings: dict[str, str],
+        asker_name: str,
+        candidate_names: list[str],
+    ) -> str:
+        """构建质询目标选择阶段的上下文。
+
+        Args:
+            question: 辩论问题
+            openings: {debater_name: opening_text} 所有辩者的立论内容
+            asker_name: 提问者名称
+            candidate_names: 可选择的对手名称列表
+
+        Returns:
+            适合传入 invoke_structured 的 user_content
+        """
+        openings_text = ""
+        for name, text in openings.items():
+            openings_text += f"\n### {name} 的立论\n{text}\n"
+
+        candidates = "、".join(candidate_names)
+
+        return f"""辩论问题：「{question}」
+
+以下是所有辩者的立论观点：
+{openings_text}
+
+作为 {asker_name}，你需要从以下辩者中选择 2 位作为质询目标：
+{candidates}
+
+请选出论证最值得质疑的 2 位对手。"""
 
     @staticmethod
     def build_cross_answer_context(
@@ -330,6 +369,7 @@ class DebateAgent(BaseAgent):
         question: str,
         full_transcript: str,
         votes_text: str,
+        debater_id_map: dict[str, str] | None = None,
     ) -> str:
         """构建裁判统计阶段的上下文（仅数据，指令由 stage task prompt 提供）。
 
@@ -337,10 +377,14 @@ class DebateAgent(BaseAgent):
             question: 辩论问题
             full_transcript: 完整辩论记录
             votes_text: 投票记录文本
-
-        Returns:
-            适合传入 invoke_text / invoke_stream 的 user_content
+            debater_id_map: {名称: id} 映射，帮助 LLM 输出正确的 ID
         """
+        id_info = ""
+        if debater_id_map:
+            id_info = "\n辩者 ID 对照（winner_id 必须使用以下 ID）：\n" + "\n".join(
+                f"  {name} → id: {did}" for name, did in debater_id_map.items()
+            )
+
         return f"""辩论问题：「{question}」
 
 完整辩论记录：
@@ -348,6 +392,7 @@ class DebateAgent(BaseAgent):
 
 投票记录：
 {votes_text}
+{id_info}
 
 请统计结果。"""
 
