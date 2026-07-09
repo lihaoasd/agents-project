@@ -6,6 +6,7 @@
 - POST /start                     创建辩论会话
 - GET  /stream/{session_id}       SSE 实时辩论流
 - GET  /sessions/{session_id}     获取完整辩论记录
+- GET  /sessions/{session_id}/export  导出辩论记录（md/json/pdf）
 """
 
 from __future__ import annotations
@@ -37,6 +38,14 @@ from debate.service.debate_service import (
     _VoteOutput,
 )
 from debate.session.store import SessionNotFoundError
+from debate.service.export_service import (
+    build_session_response,
+    generate_markdown,
+    generate_json_export,
+    generate_pdf,
+    _PdfDependencyError,
+    _PdfGenerationError,
+)
 
 router = APIRouter(prefix="/api/debate", tags=["debate"])
 
@@ -798,10 +807,130 @@ async def _stream_full_debate(
 
 @router.get("/sessions/{session_id}", summary="获取完整辩论记录")
 async def get_session(session_id: str) -> dict[str, Any]:
-    """返回完整结构化辩论记录。"""
-    try:
-        session = _service.get_session(session_id)
-    except SessionNotFoundError:
-        raise HTTPException(status_code=404, detail=f"会话不存在: {session_id}")
+    """返回完整结构化辩论记录。
 
-    return session.model_dump()
+    优先从内存读取，内存中不存在时从磁盘存档加载。
+    辩论进行中时返回 status="running" 和当前阶段。
+    """
+    # 先尝试内存
+    session = _service._store.get_or_none(session_id)
+    if session is not None:
+        return build_session_response(session, _service._store)
+
+    # 再尝试磁盘存档
+    archived = _service._store.load_archived(session_id)
+    if archived is not None:
+        return archived
+
+    raise HTTPException(status_code=404, detail=f"会话不存在或已过期: {session_id}")
+
+
+
+
+# ============================================================
+# 8.X: GET /api/debate/sessions/{session_id}/export
+# ============================================================
+
+
+@router.get("/sessions/{session_id}/export", summary="导出辩论记录")
+async def export_session(
+    session_id: str,
+    format: str = Query(default="md", description="导出格式: md | json | pdf"),
+):
+    """下载辩论记录文件。
+
+    格式：
+    - md   → Markdown 文本文件
+    - json → JSON 结构化数据文件
+    - pdf  → 美观排版的 PDF 文件
+
+    辩论进行中时返回 409。
+    """
+    from fastapi.responses import PlainTextResponse, Response
+
+    # 加载会话
+    session = _service._store.get_or_none(session_id)
+    if session is None:
+        # 尝试从磁盘存档加载
+        archived = _service._store.load_archived(session_id)
+        if archived is None:
+            raise HTTPException(
+                status_code=404, detail=f"会话不存在或已过期: {session_id}"
+            )
+        # 从存档数据判断状态
+        if archived.get("status") != "completed":
+            raise HTTPException(
+                status_code=409,
+                detail=f"辩论仍在进行中（当前状态: {archived.get('status', 'unknown')}），无法导出",  # noqa: E501
+            )
+
+    if session is not None and not session.is_complete:
+        raise HTTPException(
+            status_code=409,
+            detail=f"辩论仍在进行中（当前阶段: {session.current_phase.value}），无法导出",  # noqa: E501
+        )
+
+    # 确保已持久化
+    if session is not None and not _service._store.is_archived(session_id):
+        _service._store.persist(session_id)
+
+    if format == "json":
+        # JSON 导出
+        if session is not None:
+            json_str = generate_json_export(session, _service._store)
+        else:
+            json_str = json.dumps(archived, ensure_ascii=False, indent=2)
+
+        return Response(
+            content=json_str,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="debate_{session_id}.json"',
+            },
+        )
+
+    elif format == "pdf":
+        # PDF 导出
+        if session is not None:
+            try:
+                pdf_bytes = generate_pdf(session, _service._store)
+            except _PdfDependencyError as e:
+                raise HTTPException(
+                    status_code=501,
+                    detail=f"PDF 生成依赖未安装: {e}. 请运行: pip install markdown weasyprint",  # noqa: E501
+                )
+            except _PdfGenerationError as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"PDF 生成失败: {e}",
+                )
+        else:
+            raise HTTPException(
+                status_code=501,
+                detail="PDF 导出需要原始会话对象（存档仅含 JSON），请使用 md 或 json 格式",  # noqa: E501
+            )
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="debate_{session_id}.pdf"',
+            },
+        )
+
+    else:
+        # Markdown 导出（默认）
+        if session is not None:
+            md_str = generate_markdown(session)
+        elif archived is not None:
+            md_str = archived.get("export", {}).get("markdown", "")
+        else:
+            raise HTTPException(status_code=404, detail=f"会话不存在: {session_id}")
+
+        return Response(
+            content=md_str,
+            media_type="text/markdown; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="debate_{session_id}.md"',
+            },
+        )

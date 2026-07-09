@@ -10,3 +10,6 @@ langchain-anthropic>=0.3.0
 langchain-openai>=0.3.0
 langchain-mcp-adapters>=0.1.0
 langgraph>=0.2.0
+# 辩论 PDF 导出（阶段八）
+markdown>=3.5
+weasyprint>=60.0
