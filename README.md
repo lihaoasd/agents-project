@@ -51,7 +51,23 @@ LLM_API_BASE=https://your-api-endpoint/v1
 ### 2. 启动后端
 
 ```bash
+cd backend
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+# Git Bash / Linux / macOS
+# source .venv/Scripts/activate
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+或直接运行（默认 `127.0.0.1:8000`）：
+
+```bash
+cd backend
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+# Git Bash / Linux / macOS
+# source .venv/Scripts/activate
+python main.py
 ```
 
 ### 3. 启动前端

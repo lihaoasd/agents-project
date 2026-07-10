@@ -1,0 +1,446 @@
+/* ========== 辩论 PDF 预览样式 ========== */
+
+.dpdf-wrapper {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 40px;
+}
+
+.dpdf-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 16px;
+}
+
+.dpdf-toolbar button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.dpdf-btn-download {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.dpdf-btn-download:hover {
+  background: #2c3e50;
+}
+
+.dpdf-btn-download:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.dpdf-btn-close {
+  background: #f0f0f0;
+  color: #555;
+}
+
+.dpdf-btn-close:hover {
+  background: #ddd;
+}
+
+/* ===== PDF 容器 ===== */
+
+.dpdf-container {
+  width: 800px;
+  padding: 32px 40px;
+  background: #f8f9fa;
+  color: #2c3e50;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  box-sizing: border-box;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dpdf-container *,
+.dpdf-container *::before,
+.dpdf-container *::after {
+  box-sizing: border-box;
+}
+
+/* ===== 封面 ===== */
+
+.dpdf-cover {
+  text-align: center;
+  padding: 50px 20px 30px;
+  position: relative;
+}
+
+.dpdf-cover::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 50px;
+  height: 50px;
+  border-top: 2px solid #f1c40f;
+  border-left: 2px solid #f1c40f;
+  border-radius: 2px 0 0 0;
+}
+
+.dpdf-cover::after {
+  content: '';
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 50px;
+  height: 50px;
+  border-bottom: 2px solid #f1c40f;
+  border-right: 2px solid #f1c40f;
+  border-radius: 0 0 2px 0;
+}
+
+.dpdf-cover-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #1a1a2e;
+  margin: 0 0 16px;
+}
+
+.dpdf-cover-question {
+  font-size: 15px;
+  color: #34495e;
+  padding: 12px 20px;
+  border-top: 2px solid #f1c40f;
+  border-bottom: 2px solid #f1c40f;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.dpdf-cover-meta {
+  font-size: 12px;
+  color: #7f8c8d;
+  line-height: 2;
+}
+
+.dpdf-cover-divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #f1c40f, transparent);
+  margin: 20px auto;
+}
+
+/* ===== 阶段标题 ===== */
+
+.dpdf-phase-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 20px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #f1c40f;
+}
+
+.dpdf-phase-subtitle {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin: -8px 0 12px;
+}
+
+/* ===== 消息卡片 ===== */
+
+.dpdf-message {
+  background: #fff;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  border-left: 4px solid #3498db;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dpdf-message-speaker {
+  font-weight: 700;
+  font-size: 13px;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.dpdf-message-target {
+  font-size: 10px;
+  color: #e74c3c;
+  margin-bottom: 2px;
+}
+
+.dpdf-message-school {
+  font-weight: 400;
+  font-size: 10px;
+  color: #95a5a6;
+  margin-left: 6px;
+}
+
+.dpdf-message-content {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #2c3e50;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dpdf-message-content p {
+  margin: 2px 0;
+}
+
+/* 消息内容中的标题降级为加粗正文 */
+.dpdf-message-content h1,
+.dpdf-message-content h2,
+.dpdf-message-content h3,
+.dpdf-message-content h4,
+.dpdf-message-content h5,
+.dpdf-message-content h6 {
+  font-size: inherit;
+  font-weight: 700;
+  margin: 4px 0;
+  display: inline;
+}
+
+.dpdf-message-content h1::after,
+.dpdf-message-content h2::after,
+.dpdf-message-content h3::after,
+.dpdf-message-content h4::after,
+.dpdf-message-content h5::after,
+.dpdf-message-content h6::after {
+  content: '\A';
+  white-space: pre;
+}
+
+/* 不同学派颜色 */
+.dpdf-school-confucian  { border-left-color: #e74c3c; }
+.dpdf-school-daoist     { border-left-color: #2ecc71; }
+.dpdf-school-legalist   { border-left-color: #7f8c8d; }
+.dpdf-school-mohist     { border-left-color: #3498db; }
+.dpdf-school-mind       { border-left-color: #9b59b6; }
+.dpdf-school-military   { border-left-color: #e67e22; }
+.dpdf-school-synthesizer { border-left-color: #f1c40f; }
+
+/* ===== 质询对 ===== */
+
+.dpdf-qa-pair {
+  margin: 10px 0;
+}
+
+.dpdf-qa-round-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7f8c8d;
+  margin-bottom: 6px;
+}
+
+.dpdf-qa-question {
+  background: #fff;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  border-left: 4px solid #e67e22;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dpdf-qa-answer {
+  background: #fff;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  border-left: 4px solid #2ecc71;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dpdf-qa-speaker {
+  font-weight: 700;
+  font-size: 12px;
+  color: #2c3e50;
+  margin-bottom: 3px;
+}
+
+.dpdf-qa-school {
+  font-weight: 400;
+  font-size: 10px;
+  color: #95a5a6;
+  margin-left: 6px;
+}
+
+.dpdf-qa-content {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #2c3e50;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* QA 内容中的标题降级 */
+.dpdf-qa-content h1,
+.dpdf-qa-content h2,
+.dpdf-qa-content h3,
+.dpdf-qa-content h4,
+.dpdf-qa-content h5,
+.dpdf-qa-content h6 {
+  font-size: inherit;
+  font-weight: 700;
+  margin: 4px 0;
+  display: inline;
+}
+
+.dpdf-qa-content h1::after,
+.dpdf-qa-content h2::after,
+.dpdf-qa-content h3::after,
+.dpdf-qa-content h4::after,
+.dpdf-qa-content h5::after,
+.dpdf-qa-content h6::after {
+  content: '\A';
+  white-space: pre;
+}
+
+.dpdf-qa-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 6px;
+}
+
+.dpdf-qa-label-ask {
+  color: #e67e22;
+}
+
+.dpdf-qa-label-ans {
+  color: #2ecc71;
+}
+
+/* ===== 投票表格 ===== */
+
+.dpdf-vote-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 12px;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dpdf-vote-table th {
+  background: #f1c40f;
+  color: #1a1a2e;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.dpdf-vote-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #ecf0f1;
+  font-size: 12px;
+}
+
+.dpdf-vote-table .dpdf-winner-row {
+  background: #fef9e7;
+  font-weight: 700;
+}
+
+.dpdf-vote-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ===== 奖项 ===== */
+
+.dpdf-awards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.dpdf-award-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dpdf-award-best-argument {
+  background: #f1c40f;
+  color: #1a1a2e;
+}
+
+.dpdf-award-best-cross {
+  background: #3498db;
+  color: #fff;
+}
+
+/* ===== 裁判总结 ===== */
+
+.dpdf-judge-card {
+  background: linear-gradient(135deg, #fef9e7, #fdf2d0);
+  border: 2px solid #f1c40f;
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 10px 0;
+}
+
+.dpdf-judge-content {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #2c3e50;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dpdf-judge-content p {
+  margin: 4px 0;
+}
+
+/* 裁判总结中的标题降级 */
+.dpdf-judge-content h1,
+.dpdf-judge-content h2,
+.dpdf-judge-content h3,
+.dpdf-judge-content h4,
+.dpdf-judge-content h5,
+.dpdf-judge-content h6 {
+  font-size: inherit;
+  font-weight: 700;
+  margin: 4px 0;
+  display: inline;
+}
+
+.dpdf-judge-content h1::after,
+.dpdf-judge-content h2::after,
+.dpdf-judge-content h3::after,
+.dpdf-judge-content h4::after,
+.dpdf-judge-content h5::after,
+.dpdf-judge-content h6::after {
+  content: '\A';
+  white-space: pre;
+}
+
+/* ===== 分隔线 ===== */
+
+.dpdf-section-divider {
+  border: none;
+  border-top: 1px dashed #d5dbdb;
+  margin: 16px 0;
+}

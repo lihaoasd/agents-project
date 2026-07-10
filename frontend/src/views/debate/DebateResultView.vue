@@ -2,11 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { fetchSession, getExportUrl } from '../../api/debateApi.js'
 import { marked } from 'marked'
+import DebatePdf from '../../components/DebatePdf.vue'
 
 const props = defineProps({ sessionId: { type: String, required: true } })
 
 const session = ref(null)
 const loading = ref(true)
+const showPdf = ref(false)
 
 onMounted(async () => {
   try {
@@ -92,7 +94,11 @@ function renderMd(text) {
 }
 
 function exportFormat(format) {
-  window.open(getExportUrl(props.sessionId, format))
+  if (format === 'pdf') {
+    showPdf.value = true
+  } else {
+    window.open(getExportUrl(props.sessionId, format))
+  }
 }
 </script>
 
@@ -172,5 +178,8 @@ function exportFormat(format) {
     <div v-else class="debate-panel" style="text-align:center; padding:60px 28px; color:var(--muted);">
       辩论记录不存在或已过期
     </div>
+
+    <!-- 前端 PDF 导出 -->
+    <DebatePdf v-if="showPdf && session" :sessionData="session" @close="showPdf = false" />
   </div>
 </template>
